@@ -741,11 +741,12 @@ const IB_BASE_URL = 'https://api.infobip.com';
 const IB_SENDER   = 'HealthQueue';
 const IB_WA_SENDER = '27600123456'; // your Infobip WhatsApp sender number
 
-// ═══════════════════════════════════════════
-// SUPABASE INIT
-// ═══════════════════════════════════════════
-const { createClient } = supabase;
-const db = createClient(SB_URL, SB_ANON);
+// ==========================================
+// SUPABASE INIT (CORRECTED FOR CDN)
+// ==========================================
+
+// When using the CDN script, createClient is attached directly to the global supabase object
+const db = supabase.createClient(SB_URL, SB_ANON);
 
 // ═══════════════════════════════════════════
 // STATE
