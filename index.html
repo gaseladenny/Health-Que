@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HealthQueue — Live</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@supabase/supabase-js@2.43.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
 :root {
   --bg:#0d0f0e; --surface:#141716; --surface2:#1a1d1b; --surface3:#1f2320;
   --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
@@ -77,12 +78,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);fon
 .metric-value.red{color:var(--red);} .metric-value.amber{color:var(--amber);} .metric-value.green{color:var(--green);} .metric-value.blue{color:var(--blue);}
 .metric-sub{font-size:10px;color:var(--text3);margin-top:6px;font-family:'DM Mono',monospace;}
 
+/* badge */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap;font-family:'DM Mono',monospace;}
+.badge-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.badge-amber{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(251,191,36,.2);}
+.badge-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2);}
+.badge-gray{background:var(--surface3);color:var(--text2);border:1px solid var(--border);}
+.badge-teal{background:rgba(45,212,191,.1);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+
 /* btn */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;transition:all .12s;font-family:'DM Sans',sans-serif;}
 .btn:hover{background:var(--surface3);color:var(--text);}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 .btn-primary{background:var(--green);color:var(--bg);border-color:var(--green);font-weight:700;}
 .btn-primary:hover{background:var(--green-mid);}
+.btn-danger{background:var(--red-dim);color:var(--red);border-color:rgba(248,113,113,.2);}
+.btn-danger:hover{background:var(--red);color:var(--bg);}
 .btn-sm{padding:4px 10px;font-size:11px;}
 .btn svg{width:13px;height:13px;}
 
@@ -90,6 +103,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);fon
 .qtable{width:100%;border-collapse:collapse;}
 .qtable th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:9px 14px;border-bottom:1px solid var(--border);background:var(--surface2);font-family:'Syne',sans-serif;}
 .qtable td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.qtable tr:last-child td{border-bottom:none;}
+.qtable tbody tr:hover td{background:var(--surface2);cursor:pointer;}
+.pname{font-weight:500;color:var(--text);}
+.psub{font-size:11px;color:var(--text3);margin-top:1px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wmono{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);}
+.wmono.over{color:var(--amber);}
+.tdot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.tdot.critical{background:var(--red);box-shadow:0 0 6px rgba(248,113,113,.5);}
+.tdot.urgent{background:var(--amber);}
+.tdot.routine{background:var(--green);}
+.tdot.booked{background:var(--blue);}
 
 /* form */
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -98,34 +122,113 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);fon
 .flabel{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-family:'Syne',sans-serif;}
 .finput{border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 11px;background:var(--surface2);color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .12s;width:100%;}
 .finput:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,.08);}
+.finput::placeholder{color:var(--text3);}
+select.finput{cursor:pointer;}
+select.finput option{background:var(--surface2);}
 textarea.finput{resize:vertical;min-height:68px;}
 
 /* triage selector */
 .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 .tcard{border:1px solid var(--border2);border-radius:var(--radius);padding:13px 10px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2);}
 .tcard:hover{transform:translateY(-1px);}
-.tcard.selected{border-width:2px;}
-.tcard.selected.critical{border-color:var(--red);background:var(--red-dim);}
-.tcard.selected.urgent{border-color:var(--amber);background:var(--amber-dim);}
-.tcard.selected.routine{border-color:var(--green);background:var(--green-dim);}
-.tcard.selected.booked{border-color:var(--blue);background:var(--blue-dim);}
+.tcard.sel-critical{border-color:var(--red);background:var(--red-dim);}
+.tcard.sel-urgent{border-color:var(--amber);background:var(--amber-dim);}
+.tcard.sel-routine{border-color:var(--green);background:var(--green-dim);}
+.tcard.sel-booked{border-color:var(--blue);background:var(--blue-dim);}
 .tcard-emoji{font-size:20px;margin-bottom:5px;}
 .tcard-label{font-size:12px;font-weight:700;font-family:'Syne',sans-serif;}
 .tcard-desc{font-size:10px;color:var(--text3);margin-top:2px;}
 
+/* layout helpers */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.mb14{margin-bottom:14px;} .mb10{margin-bottom:10px;}
 .flex-between{display:flex;justify-content:space-between;align-items:center;}
 .flex-gap{display:flex;align-items:center;gap:8px;}
-.mb10{margin-bottom:10px;} .mb14{margin-bottom:14px;}
 
-/* info badge */
+/* progress */
+.prow{margin-bottom:10px;}
+.plabel{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;color:var(--text2);}
+.ptrack{height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.pfill{height:100%;border-radius:3px;transition:width .5s ease;}
+
+/* sms log */
+.sms-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.sms-item:last-child{border-bottom:none;}
+.sms-time{font-family:'DM Mono',monospace;color:var(--text3);min-width:44px;}
+.sms-recip{font-weight:500;color:var(--text);min-width:130px;}
+.sms-msg{color:var(--text2);flex:1;}
+
+/* TV board */
+.tv-board{background:#050a10;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);}
+.tv-hdr{background:#081018;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06);}
+.tv-logo{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:white;display:flex;align-items:center;gap:8px;}
+.tv-logo .dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pdot 2s ease-in-out infinite;}
+.tv-time{font-family:'DM Mono',monospace;font-size:13px;color:rgba(255,255,255,.3);}
+.tv-now{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.05);}
+.tv-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px;font-family:'Syne',sans-serif;}
+.tv-now-card{display:flex;align-items:center;gap:16px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.15);border-radius:10px;padding:14px 18px;}
+.tv-ticket{font-family:'DM Mono',monospace;font-size:36px;font-weight:400;color:var(--green);min-width:90px;}
+.tv-pname{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:white;}
+.tv-pdept{font-size:13px;color:rgba(255,255,255,.4);margin-top:4px;}
+.tv-next-sec{padding:12px 20px 16px;}
+.tv-row{display:flex;align-items:center;gap:14px;padding:9px 14px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:5px;border:1px solid rgba(255,255,255,.05);}
+.tv-tkt{font-family:'DM Mono',monospace;font-size:18px;color:rgba(255,255,255,.7);min-width:65px;}
+.tv-nm{flex:1;font-size:15px;color:rgba(255,255,255,.75);}
+.tv-dept{font-size:12px;color:rgba(255,255,255,.3);}
+.tv-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.tv-ftr{padding:10px 20px;border-top:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.25);}
+
+/* modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius);width:460px;max-height:85vh;overflow-y:auto;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,.6);}
+.modal-hdr{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;}
+.modal-hdr h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+.modal-body{padding:18px;}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ditem .dkey{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:2px;font-family:'Syne',sans-serif;}
+.ditem .dval{font-size:13px;font-weight:500;color:var(--text);}
+
+/* toast */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--surface);color:var(--text);padding:11px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;display:none;z-index:999;border:1px solid var(--border2);box-shadow:0 8px 32px rgba(0,0,0,.5);animation:sup .2s ease;max-width:320px;}
+.toast.success{border-color:rgba(74,222,128,.3);}
+.toast.error{border-color:rgba(248,113,113,.3);}
+@keyframes sup{from{transform:translateY(8px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+
+/* notif bubble */
+.notif{position:fixed;top:16px;right:16px;background:var(--surface);border:1px solid rgba(74,222,128,.3);border-radius:var(--radius);padding:12px 16px;width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:500;display:none;animation:sdn .25s ease;}
+@keyframes sdn{from{transform:translateY(-8px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.notif-title{font-size:12px;font-weight:700;color:var(--green);margin-bottom:3px;font-family:'Syne',sans-serif;}
+.notif-msg{font-size:12px;color:var(--text2);}
+
+/* connection banner */
+.conn-banner{display:none;background:var(--red-dim);border-bottom:1px solid rgba(248,113,113,.2);padding:7px 22px;font-size:12px;color:var(--red);text-align:center;}
+.conn-banner.show{display:block;}
+
+/* spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* bar chart */
+.bars{display:flex;align-items:flex-end;gap:4px;height:78px;}
+.bar{flex:1;border-radius:3px 3px 0 0;min-width:0;transition:opacity .2s;cursor:default;}
+.bar:hover{opacity:.7;}
+.blbls{display:flex;gap:4px;margin-top:5px;}
+.blbl{flex:1;font-size:9px;text-align:center;color:var(--text3);font-family:'DM Mono',monospace;}
+
+/* infobip badge */
 .ib-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:rgba(45,212,191,.1);color:var(--teal);border:1px solid rgba(45,212,191,.2);font-family:'DM Mono',monospace;}
 </style>
 </head>
 <body>
 
+<div class="conn-banner" id="conn-banner">⚠ Connection issue — retrying Supabase...</div>
+
 <div class="app">
 
+  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="brand">
       <div class="brand-row">
@@ -134,29 +237,167 @@ textarea.finput{resize:vertical;min-height:68px;}
         </div>
         <span class="brand-name">HealthQueue</span>
       </div>
-      <div class="brand-clinic">Mogale City Clinic</div>
+      <div class="brand-clinic" id="clinic-label">Groote Schuur Clinic</div>
       <div class="live-row">
         <span class="live-dot"></span>
-       const SB_URL = "https://your-project-id.supabase.co"; 
-const SB_ANON = "your-actual-anon-public-key-string";
+        <span class="live-txt" id="conn-status">connecting…</span>
+      </div>
     </div>
 
     <span class="nav-section">Reception</span>
-    <div class="nav-item active" onclick="nav('register')">Register Patient</div>
+    <div class="nav-item active" onclick="nav('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+      <span class="nav-badge" id="crit-badge" style="display:none">!</span>
+    </div>
+    <div class="nav-item" onclick="nav('queue')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Live Queue
+    </div>
+    <div class="nav-item" onclick="nav('register')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      Register Patient
+    </div>
+
+    <span class="nav-section">Clinical</span>
+    <div class="nav-item" onclick="nav('triage')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Triage
+    </div>
+    <div class="nav-item" onclick="nav('doctor')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M8 12a4 4 0 0 0-4 4v2h16v-2a4 4 0 0 0-4-4"/></svg>
+      Doctor Console
+    </div>
+
+    <span class="nav-section">Patient</span>
+    <div class="nav-item" onclick="nav('kiosk')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      Self-Check-In
+    </div>
+    <div class="nav-item" onclick="nav('display')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      TV Display
+    </div>
+    <div class="nav-item" onclick="nav('sms')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      SMS / WhatsApp
+    </div>
+
+    <span class="nav-section">Management</span>
+    <div class="nav-item" onclick="nav('analytics')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analytics
+    </div>
+    <div class="nav-item" onclick="nav('facility')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      Facility Manager
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="foot-name">Sister N. Dlamini</div>
+      <div class="foot-role">Reception · Shift A</div>
+    </div>
   </div>
 
+  <!-- MAIN -->
   <div class="main">
     <div class="topbar">
-      <div class="page-title">HealthQue-V3 Portal</div>
+      <div class="page-title" id="page-title">Dashboard</div>
       <div class="topbar-right">
-        <div class="status-pill"><span class="rpulse"></span><span>Live</span></div>
+        <div class="status-pill"><span class="rpulse"></span><span id="rt-status">Live</span></div>
+        <div class="clock" id="clock">--:--</div>
       </div>
     </div>
 
     <div class="content">
-      <div class="page active" id="page-register">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="metrics-grid">
+          <div class="metric" style="--ac:var(--blue)">
+            <div class="metric-label">In Queue</div>
+            <div class="metric-value blue" id="m-queue">—</div>
+            <div class="metric-sub" id="m-queue-sub">loading…</div>
+          </div>
+          <div class="metric" style="--ac:var(--amber)">
+            <div class="metric-label">Avg Wait</div>
+            <div class="metric-value amber" id="m-wait">—</div>
+            <div class="metric-sub">minutes</div>
+          </div>
+          <div class="metric" style="--ac:var(--green)">
+            <div class="metric-label">Seen Today</div>
+            <div class="metric-value green" id="m-seen">0</div>
+            <div class="metric-sub">target: 100</div>
+          </div>
+          <div class="metric" style="--ac:var(--red)">
+            <div class="metric-label">Critical</div>
+            <div class="metric-value red" id="m-critical">—</div>
+            <div class="metric-sub">immediate care</div>
+          </div>
+          <div class="metric" style="--ac:var(--teal)">
+            <div class="metric-label">SMS Sent</div>
+            <div class="metric-value" id="m-sms">0</div>
+            <div class="metric-sub">today via Infobip</div>
+          </div>
+        </div>
+        <div class="two-col mb14">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Next in queue</div>
+              <button class="btn btn-sm" onclick="nav('queue')">View all →</button>
+            </div>
+            <table class="qtable" id="dash-table"></table>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Triage breakdown</div></div>
+              <div class="card-body" id="triage-panel"><div style="color:var(--text3);font-size:12px;">Loading…</div></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">System status</div></div>
+              <div class="card-body" id="sys-status-panel"><div style="color:var(--text3);font-size:12px;">Connecting…</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE QUEUE -->
+      <div class="page" id="page-queue">
+        <div class="flex-between mb14">
+          <div class="flex-gap">
+            <select class="finput" id="qf-triage" onchange="renderQueue()" style="width:150px;">
+              <option value="all">All triage</option>
+              <option value="critical">Critical</option>
+              <option value="urgent">Urgent</option>
+              <option value="routine">Routine</option>
+              <option value="booked">Pre-booked</option>
+            </select>
+            <select class="finput" id="qf-dept" onchange="renderQueue()" style="width:145px;">
+              <option value="all">All departments</option>
+              <option value="General">General</option>
+              <option value="Emergency">Emergency</option>
+              <option value="Chronic">Chronic</option>
+              <option value="Orthopaedics">Orthopaedics</option>
+              <option value="Maternal">Maternal</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="nav('register')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            Add Patient
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="rpulse"></span>&nbsp;Live — <span id="q-count">0</span> patients</div>
+            <div class="flex-gap" id="q-badges"></div>
+          </div>
+          <table class="qtable" id="full-table"><tbody><tr><td colspan="7" style="padding:28px;text-align:center;color:var(--text3);font-size:12px;"><span class="spin"></span>Loading from Supabase…</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="page" id="page-register">
         <div class="two-col">
-          
           <div class="card">
             <div class="card-header"><div class="card-title">Patient details</div></div>
             <div class="card-body">
@@ -167,32 +408,30 @@ const SB_ANON = "your-actual-anon-public-key-string";
                 <div class="fg"><label class="flabel">Date of birth</label><input class="finput" id="r-dob" type="date"></div>
                 <div class="fg"><label class="flabel">Phone (SMS/WhatsApp) *</label><input class="finput" id="r-phone" placeholder="07x xxx xxxx"></div>
                 <div class="fg"><label class="flabel">Gender</label>
-                  <select class="finput" id="r-gender"><option value="">Select</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
+                  <select class="finput" id="r-gender"><option value="">Select</option><option>Female</option><option>Male</option><option>Non-binary</option><option>Prefer not to say</option></select>
                 </div>
                 <div class="fg full"><label class="flabel">Chief complaint *</label><textarea class="finput" id="r-complaint" placeholder="Describe main symptoms…"></textarea></div>
                 <div class="fg"><label class="flabel">Department</label>
-                  <select class="finput" id="r-dept"><option>General</option><option>Emergency</option><option>Chronic</option></select>
+                  <select class="finput" id="r-dept"><option>General</option><option>Emergency</option><option>Chronic</option><option>Orthopaedics</option><option>Maternal</option><option>Paediatrics</option></select>
                 </div>
                 <div class="fg"><label class="flabel">Visit type</label>
-                  <select class="finput" id="r-type"><option>Walk-in</option><option>Pre-booked</option></select>
+                  <select class="finput" id="r-type"><option>Walk-in</option><option>Pre-booked</option><option>Referral</option><option>Follow-up</option></select>
                 </div>
               </div>
             </div>
           </div>
-
           <div>
             <div class="card mb10">
               <div class="card-header"><div class="card-title">Triage category *</div></div>
               <div class="card-body">
                 <div class="tgrid">
-                  <div class="tcard" id="tc-critical" onclick="selTriage('Critical')"><div class="tcard-emoji">🔴</div><div class="tcard-label" style="color:var(--red)">Critical</div></div>
-                  <div class="tcard" id="tc-urgent" onclick="selTriage('Urgent')"><div class="tcard-emoji">🟠</div><div class="tcard-label" style="color:var(--amber)">Urgent</div></div>
-                  <div class="tcard" id="tc-routine" onclick="selTriage('Routine')"><div class="tcard-emoji">🟢</div><div class="tcard-label" style="color:var(--green)">Routine</div></div>
-                  <div class="tcard" id="tc-booked" onclick="selTriage('Pre-booked')"><div class="tcard-emoji">🔵</div><div class="tcard-label" style="color:var(--blue)">Pre-booked</div></div>
+                  <div class="tcard" id="tc-critical" onclick="selTriage('critical')"><div class="tcard-emoji">🔴</div><div class="tcard-label" style="color:var(--red)">Critical</div><div class="tcard-desc">Life-threatening</div></div>
+                  <div class="tcard" id="tc-urgent"   onclick="selTriage('urgent')"><div class="tcard-emoji">🟠</div><div class="tcard-label" style="color:var(--amber)">Urgent</div><div class="tcard-desc">Needs care soon</div></div>
+                  <div class="tcard" id="tc-routine"  onclick="selTriage('routine')"><div class="tcard-emoji">🟢</div><div class="tcard-label" style="color:var(--green)">Routine</div><div class="tcard-desc">Non-urgent</div></div>
+                  <div class="tcard" id="tc-booked"   onclick="selTriage('booked')"><div class="tcard-emoji">🔵</div><div class="tcard-label" style="color:var(--blue)">Pre-booked</div><div class="tcard-desc">Has appointment</div></div>
                 </div>
               </div>
             </div>
-
             <div class="card mb10">
               <div class="card-header"><div class="card-title">Quick vitals</div></div>
               <div class="card-body">
@@ -204,138 +443,1163 @@ const SB_ANON = "your-actual-anon-public-key-string";
                 </div>
               </div>
             </div>
-
             <div class="card mb10">
               <div class="card-header"><div class="card-title">Messaging on registration</div><span class="ib-badge">Infobip</span></div>
               <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
-                <label style="display:flex;align-items:center;gap:8px;color:var(--text2);"><input type="checkbox" id="chk-sms" checked> Send SMS confirmation</label>
-                <label style="display:flex;align-items:center;gap:8px;color:var(--text2);"><input type="checkbox" id="chk-wa" checked> Send WhatsApp confirmation</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);"><input type="checkbox" id="chk-sms" checked style="accent-color:var(--green);"> Send SMS confirmation</label>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);"><input type="checkbox" id="chk-wa"  checked style="accent-color:var(--green);"> Send WhatsApp confirmation</label>
               </div>
             </div>
-
             <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button class="btn" onclick="clearReg()">Clear</button>
-              <button class="btn btn-primary" id="reg-btn" onclick="registerPatient()">Register & Add to Queue</button>
+              <button class="btn btn-primary" id="reg-btn" onclick="registerPatient()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
+                Register &amp; Add to Queue
+              </button>
             </div>
-
           </div>
         </div>
       </div>
+
+      <!-- TRIAGE -->
+      <div class="page" id="page-triage">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Triage queue</div><span class="badge badge-amber" id="t-pending">—</span></div>
+            <table class="qtable" id="triage-table"><tbody><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3);font-size:12px;"><span class="spin"></span>Loading…</td></tr></tbody></table>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">SATS Protocol</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+              <div style="padding:10px 12px;background:var(--red-dim);border:1px solid rgba(248,113,113,.2);border-radius:var(--radius-sm);"><div style="font-weight:700;font-size:12px;color:var(--red);margin-bottom:3px;">🔴 Red — Immediate</div><div style="font-size:12px;color:var(--text2);">Airway compromise, severe bleeding, unconscious, respiratory distress, shock</div></div>
+              <div style="padding:10px 12px;background:var(--amber-dim);border:1px solid rgba(251,191,36,.2);border-radius:var(--radius-sm);"><div style="font-weight:700;font-size:12px;color:var(--amber);margin-bottom:3px;">🟠 Orange — Very Urgent</div><div style="font-size:12px;color:var(--text2);">Moderate pain, altered consciousness, burns &lt;10%, fractures, fever &gt;39°C</div></div>
+              <div style="padding:10px 12px;background:var(--green-dim);border:1px solid rgba(74,222,128,.2);border-radius:var(--radius-sm);"><div style="font-weight:700;font-size:12px;color:var(--green);margin-bottom:3px;">🟢 Green — Routine</div><div style="font-size:12px;color:var(--text2);">Minor injuries, chronic medication, follow-ups, referral letters</div></div>
+              <div style="padding:10px 12px;background:var(--blue-dim);border:1px solid rgba(96,165,250,.2);border-radius:var(--radius-sm);"><div style="font-weight:700;font-size:12px;color:var(--blue);margin-bottom:3px;">🔵 Blue — Pre-booked</div><div style="font-size:12px;color:var(--text2);">Scheduled appointments, planned procedures, routine follow-ups</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCTOR -->
+      <div class="page" id="page-doctor">
+        <div style="display:grid;grid-template-columns:260px 1fr;gap:14px;">
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-family:'Syne',sans-serif;">My patients</div>
+            <div id="doctor-list"></div>
+          </div>
+          <div id="consult-panel">
+            <div class="card"><div class="card-body" style="display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:8px;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div style="color:var(--text3);font-size:13px;">Select a patient to begin</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KIOSK -->
+      <div class="page" id="page-kiosk">
+        <div class="two-col mb14">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Patient self-check-in</div></div>
+            <div class="card-body" style="text-align:center;">
+              <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Check in via phone — no smartphone needed</div>
+              <div style="width:110px;height:110px;background:white;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;margin:0 auto;padding:8px;">
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                  <rect x="5" y="5" width="35" height="35" fill="none" stroke="#000" stroke-width="2"/><rect x="13" y="13" width="19" height="19" fill="#000"/>
+                  <rect x="50" y="5" width="35" height="35" fill="none" stroke="#000" stroke-width="2"/><rect x="58" y="13" width="19" height="19" fill="#000"/>
+                  <rect x="5" y="50" width="35" height="35" fill="none" stroke="#000" stroke-width="2"/><rect x="13" y="58" width="19" height="19" fill="#000"/>
+                  <rect x="50" y="50" width="12" height="12" fill="#000"/><rect x="66" y="50" width="12" height="12" fill="#000"/>
+                  <rect x="50" y="66" width="12" height="12" fill="#000"/><rect x="66" y="66" width="19" height="19" fill="#000"/>
+                </svg>
+              </div>
+              <div style="font-size:12px;color:var(--text3);margin-top:8px;">Scan to check in via WhatsApp</div>
+              <div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:var(--radius);padding:12px;text-align:center;margin-top:12px;">
+                <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">No smartphone? SMS:</div>
+                <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--green);">QUEUE</div>
+                <div style="font-size:12px;color:var(--text2);">to <strong>31234</strong></div>
+              </div>
+              <div style="font-size:11px;color:var(--text3);margin-top:10px;">Powered by <span style="color:var(--teal);">Infobip</span> · Works on any phone</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Walk-up check-in</div></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div class="fg"><label class="flabel">Full name</label><input class="finput" id="k-name" placeholder="Your full name"></div>
+                <div class="fg"><label class="flabel">Phone (for SMS alert)</label><input class="finput" id="k-phone" placeholder="07x xxx xxxx"></div>
+                <div class="fg"><label class="flabel">Reason for visit</label>
+                  <select class="finput" id="k-reason">
+                    <option value="">Select…</option>
+                    <option>Collect chronic medication</option><option>Follow-up visit</option>
+                    <option>New complaint / sick</option><option>Antenatal / Maternal</option>
+                    <option>Child immunisation</option><option>Test results</option>
+                    <option>Emergency / Urgent</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;" onclick="kioskCheckin()">Check In &amp; Get Queue Number</button>
+              </div>
+              <div id="kiosk-result" style="display:none;margin-top:14px;padding:16px;background:var(--green-dim);border:1px solid rgba(74,222,128,.2);border-radius:var(--radius);text-align:center;">
+                <div style="font-family:'DM Mono',monospace;font-size:34px;font-weight:500;color:var(--green);" id="k-ticket">—</div>
+                <div style="font-size:12px;color:var(--green);margin-top:4px;">Your queue number</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:8px;" id="k-wait">—</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:4px;">SMS alert via Infobip when your turn is near</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TV DISPLAY -->
+      <div class="page" id="page-display">
+        <div class="flex-between mb14">
+          <div style="font-size:13px;color:var(--text2);">Live display — updates in real-time from Supabase</div>
+          <button class="btn btn-primary" onclick="openTV()">Open Full Screen ↗</button>
+        </div>
+        <div class="tv-board" id="tv-board">
+          <div class="tv-hdr">
+            <div class="tv-logo"><span class="dot"></span>HealthQueue</div>
+            <div class="tv-time" id="tv-clock">--:--</div>
+          </div>
+          <div class="tv-now" id="tv-now"></div>
+          <div class="tv-next-sec" id="tv-next"></div>
+          <div class="tv-ftr"><span>Wait to be called. SMS QUEUE to 31234</span><span>Supabase Live · Infobip Messaging</span></div>
+        </div>
+      </div>
+
+      <!-- SMS / WHATSAPP -->
+      <div class="page" id="page-sms">
+        <div class="two-col mb14">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Send message</div>
+              <span class="ib-badge">Infobip API</span>
+            </div>
+            <div class="card-body">
+              <div class="fg mb10"><label class="flabel">Patient</label>
+                <select class="finput" id="sms-patient"><option value="">Select patient…</option></select>
+              </div>
+              <div class="fg mb10"><label class="flabel">Channel</label>
+                <select class="finput" id="sms-channel">
+                  <option value="sms">SMS only</option>
+                  <option value="whatsapp">WhatsApp only</option>
+                  <option value="both">SMS + WhatsApp</option>
+                </select>
+              </div>
+              <div class="fg mb10"><label class="flabel">Template</label>
+                <select class="finput" id="sms-tmpl" onchange="fillTmpl()">
+                  <option value="">Choose template…</option>
+                  <option value="turn-soon">Turn soon — 3 patients away</option>
+                  <option value="ready">Ready now — report to reception</option>
+                  <option value="missed">Missed turn — please re-queue</option>
+                  <option value="appointment">Appointment reminder</option>
+                  <option value="results">Test results ready</option>
+                  <option value="custom">Custom message</option>
+                </select>
+              </div>
+              <div class="fg mb10">
+                <label class="flabel">Message <span id="char-cnt" style="font-family:'DM Mono',monospace;font-weight:400;">0/160</span></label>
+                <textarea class="finput" id="sms-msg" maxlength="160" placeholder="Type message…" style="min-height:80px;" oninput="document.getElementById('char-cnt').textContent=this.value.length+'/160'"></textarea>
+              </div>
+              <button class="btn btn-primary" id="send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+                Send via Infobip
+              </button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Infobip config</div><span class="badge badge-green" id="ib-badge">Connected</span></div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;">
+                <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text3);">Provider</span><span style="color:var(--teal);font-weight:600;">Infobip</span></div>
+                <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text3);">API key</span><span style="font-family:'DM Mono',monospace;color:var(--text2);">ed8be0c3…919bd</span></div>
+                <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text3);">Base URL</span><span style="font-family:'DM Mono',monospace;color:var(--text2);">api.infobip.com</span></div>
+                <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text3);">SA coverage</span><span style="color:var(--green);">✓ Excellent</span></div>
+                <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text3);">WhatsApp</span><span style="color:var(--green);">✓ Supported</span></div>
+                <div style="display:flex;justify-content:space-between;padding:7px 0;"><span style="color:var(--text3);">Messages today</span><span style="font-family:'DM Mono',monospace;color:var(--teal);" id="ib-count">0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Message log — live from Supabase</div>
+            <span class="badge badge-gray" id="sms-log-badge">0 sent</span>
+          </div>
+          <div class="card-body" id="sms-log-panel"><div style="color:var(--text3);font-size:12px;">No messages yet</div></div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div class="page" id="page-analytics">
+        <div class="two-col mb14">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Hourly volume</div></div>
+            <div class="card-body"><div class="bars" id="hourly-bars"></div><div class="blbls" id="hourly-lbls"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Performance vs targets</div></div>
+            <div class="card-body" id="perf-panel"></div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Triage distribution</div></div>
+            <div class="card-body" id="an-triage"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Department load</div></div>
+            <div class="card-body" id="an-depts"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FACILITY -->
+      <div class="page" id="page-facility">
+        <div class="three-col mb14">
+          <div class="card"><div class="card-body" style="text-align:center;padding:20px;">
+            <div style="font-family:'Syne',sans-serif;font-size:40px;font-weight:700;color:var(--green);" id="fm-seen">0</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:5px;text-transform:uppercase;letter-spacing:.07em;">Patients seen today</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="text-align:center;padding:20px;">
+            <div style="font-family:'Syne',sans-serif;font-size:40px;font-weight:700;color:var(--amber);" id="fm-wait">—</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:5px;text-transform:uppercase;letter-spacing:.07em;">Avg wait (min)</div>
+          </div></div>
+          <div class="card"><div class="card-body" style="text-align:center;padding:20px;">
+            <div style="font-family:'Syne',sans-serif;font-size:40px;font-weight:700;color:var(--blue);" id="fm-sms">0</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:5px;text-transform:uppercase;letter-spacing:.07em;">SMS sent today</div>
+          </div></div>
+        </div>
+        <div class="two-col mb14">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Staff on duty</div></div>
+            <div class="card-body" id="staff-panel"><div style="color:var(--text3);font-size:12px;"><span class="spin"></span>Loading staff…</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Clinic settings</div></div>
+            <div class="card-body">
+              <div class="fgrid">
+                <div class="fg"><label class="flabel">Clinic name</label><input class="finput" id="set-clinic" value="Groote Schuur Clinic"></div>
+                <div class="fg"><label class="flabel">Daily target</label><input class="finput" type="number" value="100"></div>
+                <div class="fg"><label class="flabel">Max wait (min)</label><input class="finput" type="number" value="45"></div>
+                <div class="fg"><label class="flabel">SMS sender name</label><input class="finput" value="HealthQueue"></div>
+              </div>
+              <div style="margin-top:12px;"><button class="btn btn-primary" onclick="saveSettings()">Save settings</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Supabase SQL setup</div><button class="btn btn-sm" onclick="copySQL()">Copy SQL</button></div>
+          <div class="card-body">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:10px;">If tables are missing, run this SQL in your <a href="https://supabase.com/dashboard/project/lkjzcliscgelcldwqjnk/editor" target="_blank" style="color:var(--green);">Supabase SQL Editor ↗</a></div>
+            <pre id="sql-display" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);background:var(--surface3);padding:12px;border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap;line-height:1.6;max-height:200px;overflow-y:auto;">${SQL_SCHEMA_PREVIEW}</pre>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
 
+<!-- Patient modal -->
+<div class="modal-overlay" id="pat-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3 id="m-pname">Patient</h3>
+      <button class="btn btn-sm" onclick="closeModal('pat-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="m-triage-bar" style="padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:14px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:.04em;"></div>
+      <div class="dgrid mb14" id="m-details"></div>
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;font-family:'Syne',sans-serif;">Chief Complaint</div>
+      <div id="m-complaint" style="font-size:13px;color:var(--text2);margin-bottom:14px;"></div>
+      <div id="m-vitals-wrap" style="display:none;">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;font-family:'Syne',sans-serif;">Vitals</div>
+        <div class="dgrid" id="m-vitals"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('pat-modal')">Close</button>
+      <button class="btn btn-danger" onclick="markSeen()">✓ Mark as seen</button>
+      <button class="btn btn-primary" onclick="callPatient()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.45 2 2 0 0 1 3.58 1.27h3a2 2 0 0 1 2 1.72c.12.97.35 1.91.7 2.81a2 2 0 0 1-.45 2.11L8 9a16 16 0 0 0 6.29 6.29l.78-.78a2 2 0 0 1 2.11-.45c.9.35 1.84.58 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call Patient
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="notif" id="notif"><div class="notif-title" id="n-title"></div><div class="notif-msg" id="n-msg"></div></div>
+
 <script>
-// ==========================================
-// 1. DATABASE CONFIGURATION
-// ==========================================
-const SB_URL = "YOUR_SUPABASE_PROJECT_URL"; 
-const SB_ANON = "YOUR_SUPABASE_ANON_KEY";
+// ═══════════════════════════════════════════
+// CREDENTIALS
+// ═══════════════════════════════════════════
+const SB_URL  = 'https://lkjzcliscgelcldwqjnk.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxranpjbGlzY2dlbGNsZHdxam5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTU0NzksImV4cCI6MjA5NjE5MTQ3OX0.oB76bC9XK2xXKeqoO3VgpSNfnpSTfWf-MoJzYAD3OH0';
 
-// CORRECT CDN INITIALIZATION BLUEPRINT
-const db = supabase.createClient(SB_URL, SB_ANON);
+// Infobip credentials
+const IB_API_KEY  = 'ed8be0c3dc121ffb5ce072edbac5a46b-b7be64ae-35e9-416a-b1a1-1896b7a919bd';
+const IB_BASE_URL = 'https://api.infobip.com';
+const IB_SENDER   = 'HealthQueue';
+const IB_WA_SENDER = '27600123456'; // your Infobip WhatsApp sender number
 
-let selectedTriage = 'Routine'; // Fallback default
+// ═══════════════════════════════════════════
+// SUPABASE INIT
+// ═══════════════════════════════════════════
+const { createClient } = supabase;
+const db = createClient(SB_URL, SB_ANON);
 
-// Triage Selection UI Styling Manager
-function selTriage(level) {
-  selectedTriage = level;
-  document.querySelectorAll('.tcard').forEach(c => c.classList.remove('selected', 'critical', 'urgent', 'routine', 'booked'));
-  
-  const activeCard = document.getElementById(`tc-${level.toLowerCase().replace('-','')}`);
-  if(activeCard) {
-    activeCard.classList.add('selected', level.toLowerCase().replace('-',''));
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const TC = {
+  critical:{ label:'Critical',  dot:'critical', badge:'badge-red',   color:'var(--red)',   bg:'var(--red-dim)',   border:'rgba(248,113,113,.2)' },
+  urgent:  { label:'Urgent',    dot:'urgent',   badge:'badge-amber', color:'var(--amber)', bg:'var(--amber-dim)', border:'rgba(251,191,36,.2)' },
+  routine: { label:'Routine',   dot:'routine',  badge:'badge-green', color:'var(--green)', bg:'var(--green-dim)', border:'rgba(74,222,128,.2)' },
+  booked:  { label:'Pre-booked',dot:'booked',   badge:'badge-blue',  color:'var(--blue)',  bg:'var(--blue-dim)',  border:'rgba(96,165,250,.2)' },
+};
+const PRIO = { critical:0, urgent:1, booked:2, routine:3 };
+const TV_COLORS = { critical:'#f87171', urgent:'#fbbf24', routine:'#4ade80', booked:'#60a5fa' };
+
+let queue = [];
+let smsLogData = [];
+let staffData = [];
+let activePatient = null;
+let selTriageVal = '';
+let selectedDoctor = null;
+let nextTicket = 1;
+let totalSeen = 0;
+let ibCount = 0;
+let notifiedSet = new Set();
+let dbOk = false;
+
+function sortQ(arr) {
+  return [...arr].sort((a,b)=>(PRIO[a.triage]??4)-(PRIO[b.triage]??4)||(a.wait_minutes||0)-(b.wait_minutes||0));
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+}
+
+function fmtPhone(raw) {
+  if (!raw) return null;
+  let p = raw.replace(/[\s\-()]/g,'');
+  if (p.startsWith('0')) p = '27' + p.slice(1);
+  if (p.startsWith('+')) p = p.slice(1);
+  return p;
+}
+
+// ═══════════════════════════════════════════
+// INFOBIP — SMS
+// ═══════════════════════════════════════════
+async function ibSendSMS(to, text) {
+  const phone = fmtPhone(to);
+  if (!phone) return { ok:false, error:'No phone' };
+  try {
+    const res = await fetch(`${IB_BASE_URL}/sms/2/text/advanced`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `App ${IB_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        messages: [{
+          from: IB_SENDER,
+          destinations: [{ to: phone }],
+          text,
+        }]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.requestError?.serviceException?.text || 'Infobip SMS error');
+    const msgId = data.messages?.[0]?.messageId;
+    return { ok:true, messageId: msgId };
+  } catch(e) {
+    console.error('Infobip SMS:', e);
+    return { ok:false, error:e.message };
   }
 }
 
-// Clear Form Input Utility
-function clearReg() {
-  document.querySelectorAll('.finput').forEach(input => input.value = '');
-  selectedTriage = 'Routine';
-  selTriage('Routine');
+// ═══════════════════════════════════════════
+// INFOBIP — WhatsApp
+// ═══════════════════════════════════════════
+async function ibSendWhatsApp(to, text) {
+  const phone = fmtPhone(to);
+  if (!phone) return { ok:false, error:'No phone' };
+  try {
+    const res = await fetch(`${IB_BASE_URL}/whatsapp/1/message/text`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `App ${IB_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        from: IB_WA_SENDER,
+        to: phone,
+        content: { text }
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.requestError?.serviceException?.text || 'Infobip WhatsApp error');
+    return { ok:true, messageId: data.messages?.[0]?.messageId };
+  } catch(e) {
+    console.error('Infobip WhatsApp:', e);
+    return { ok:false, error:e.message };
+  }
 }
 
-// ==========================================
-// 2. FORM SUBMISSION PIPELINE
-// ==========================================
-async function registerPatient() {
-  const submitBtn = document.getElementById('reg-btn');
-  submitBtn.disabled = true;
-  submitBtn.innerText = "Saving to Queue...";
+// ═══════════════════════════════════════════
+// SEND with log
+// ═══════════════════════════════════════════
+async function sendAndLog(patientName, phone, message, channel) {
+  const results = [];
+  let msgId = null;
 
-  // Get form text inputs
-  const first_name = document.getElementById('r-first').value.trim();
-  const surname = document.getElementById('r-last').value.trim();
-  const sa_id_passport = document.getElementById('r-id').value.trim();
-  const date_of_birth = document.getElementById('r-dob').value || new Date().toISOString().split('T')[0];
-  const phone = document.getElementById('r-phone').value.trim();
-  const gender = document.getElementById('r-gender').value || 'Prefer not to say';
-  const chief_complaint = document.getElementById('r-complaint').value.trim();
-  const department = document.getElementById('r-dept').value;
-  const visit_type = document.getElementById('r-type').value;
+  if (channel === 'sms' || channel === 'both') {
+    const r = await ibSendSMS(phone, message);
+    results.push({ ch:'sms', ...r });
+    if (r.ok) msgId = r.messageId;
+  }
+  if (channel === 'whatsapp' || channel === 'both') {
+    const r = await ibSendWhatsApp(phone, message);
+    results.push({ ch:'whatsapp', ...r });
+    if (r.ok) msgId = r.messageId;
+  }
 
-  // Get quick vitals numerical entries
-  const blood_pressure = document.getElementById('r-bp').value.trim() || null;
-  const temperature_c = parseFloat(document.getElementById('r-temp').value) || null;
-  const pulse_bpm = parseInt(document.getElementById('r-pulse').value) || null;
-  const o2_sat_percent = parseInt(document.getElementById('r-o2').value) || null;
+  const failed = results.filter(r=>!r.ok);
+  const success = results.filter(r=>r.ok);
 
-  // Check messaging settings toggles
-  const send_sms_confirmation = document.getElementById('chk-sms').checked;
-  const send_whatsapp_confirmation = document.getElementById('chk-wa').checked;
+  // Log to Supabase regardless (mark failed if all failed)
+  await db.from('sms_log').insert([{
+    patient_name: patientName,
+    phone,
+    message,
+    channel,
+    status: failed.length === results.length ? 'failed' : 'sent',
+    provider: 'infobip',
+    message_id: msgId,
+  }]);
 
-  // Simple validation block
-  if (!first_name || !surname || !phone || !chief_complaint) {
-    alert("Please fill in all mandatory fields marked with *");
-    submitBtn.disabled = false;
-    submitBtn.innerText = "Register & Add to Queue";
+  ibCount += success.length;
+  document.getElementById('ib-count').textContent = ibCount;
+  document.getElementById('m-sms').textContent = ibCount;
+
+  if (failed.length > 0 && success.length === 0) {
+    throw new Error(failed[0].error || 'Send failed');
+  }
+  return { ok:true, results };
+}
+
+// ═══════════════════════════════════════════
+// SUPABASE — fetch
+// ═══════════════════════════════════════════
+async function fetchQueue() {
+  const { data, error } = await db
+    .from('queue_entries')
+    .select('*')
+    .eq('status','waiting')
+    .order('created_at', { ascending:true });
+
+  if (error) {
+    console.error('fetchQueue:', error);
+    setConn(false);
+    if (error.code === '42P01') showSQLSetupNeeded();
     return;
   }
+  setConn(true);
+  queue = data || [];
+
+  // Find next ticket number
+  if (queue.length > 0) {
+    const nums = queue.map(p=>{
+      const m = (p.ticket||'').match(/P(\d+)/);
+      return m ? parseInt(m[1]) : 0;
+    });
+    nextTicket = Math.max(...nums, nextTicket) + 1;
+  }
+
+  refreshAll();
+}
+
+async function fetchSMSLog() {
+  const { data } = await db.from('sms_log').select('*').order('created_at',{ascending:false}).limit(30);
+  smsLogData = data || [];
+  ibCount = smsLogData.filter(s=>s.status==='sent').length;
+  document.getElementById('ib-count').textContent = ibCount;
+  document.getElementById('m-sms').textContent = ibCount;
+  renderSMSLog();
+}
+
+async function fetchStaff() {
+  const { data } = await db.from('staff').select('*').eq('is_on_duty', true);
+  staffData = data || [];
+  renderStaff();
+}
+
+// ═══════════════════════════════════════════
+// SUPABASE — realtime
+// ═══════════════════════════════════════════
+function subscribeRealtime() {
+  db.channel('hq-live')
+    .on('postgres_changes', { event:'*', schema:'public', table:'queue_entries' }, payload => {
+      console.log('Queue change:', payload.eventType);
+      fetchQueue();
+      if (payload.eventType === 'INSERT') {
+        const p = payload.new;
+        showNotif('New patient registered', `${p.first_name} ${p.last_name} — ${TC[p.triage]?.label||p.triage}`);
+      }
+      if (payload.eventType === 'UPDATE' && payload.new.status !== 'waiting') {
+        totalSeen++;
+        document.getElementById('m-seen').textContent = totalSeen;
+        document.getElementById('fm-seen').textContent = totalSeen;
+      }
+    })
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'sms_log' }, () => {
+      fetchSMSLog();
+    })
+    .subscribe(s => {
+      if (s === 'SUBSCRIBED') { setConn(true); document.getElementById('rt-status').textContent = 'Live'; }
+      else if (s === 'CLOSED' || s === 'CHANNEL_ERROR') setConn(false);
+    });
+}
+
+function setConn(ok) {
+  dbOk = ok;
+  document.getElementById('conn-status').textContent = ok ? 'connected' : 'reconnecting…';
+  document.getElementById('conn-banner').classList.toggle('show', !ok);
+}
+
+function showSQLSetupNeeded() {
+  toast('⚠ Tables not found — run SQL setup in Facility Manager', 'error');
+}
+
+// ═══════════════════════════════════════════
+// REGISTER
+// ═══════════════════════════════════════════
+async function registerPatient() {
+  const first    = document.getElementById('r-first').value.trim();
+  const last     = document.getElementById('r-last').value.trim();
+  const complaint= document.getElementById('r-complaint').value.trim();
+  const phone    = document.getElementById('r-phone').value.trim();
+
+  if (!first||!last) { toast('⚠ Enter patient name'); return; }
+  if (!complaint)    { toast('⚠ Enter chief complaint'); return; }
+  if (!selTriageVal) { toast('⚠ Select triage category'); return; }
+
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  const waitMap = { critical:5, urgent:25, booked:30, routine:65 };
+  const ticket  = 'P' + String(nextTicket++).padStart(3,'0');
+
+  const entry = {
+    ticket, first_name:first, last_name:last,
+    phone: phone||null, complaint,
+    triage: selTriageVal,
+    department: document.getElementById('r-dept').value,
+    visit_type: document.getElementById('r-type').value,
+    wait_minutes: waitMap[selTriageVal],
+    status: 'waiting',
+    bp:   document.getElementById('r-bp').value.trim()||null,
+    temp: document.getElementById('r-temp').value.trim()||null,
+    pulse:document.getElementById('r-pulse').value.trim()||null,
+    o2:   document.getElementById('r-o2').value.trim()||null,
+  };
 
   try {
-    // Send directly to the patients_queue database table instance
-    const { data, error } = await db
-      .from('patients_queue')
-      .insert([
-        {
-          first_name,
-          surname,
-          sa_id_passport,
-          date_of_birth,
-          phone,
-          gender,
-          chief_complaint,
-          department,
-          visit_type,
-          triage_status: selectedTriage,
-          blood_pressure,
-          temperature_c,
-          pulse_bpm,
-          o2_sat_percent,
-          send_sms_confirmation,
-          send_whatsapp_confirmation
-        }
-      ]);
+    const { error } = await db.from('queue_entries').insert([entry]);
+    if (error) throw error;
 
-    if (error) {
-      alert("Supabase Error: " + error.message);
-      console.error(error);
-    } else {
-      alert("🎉 Patient added to HealthQue successfully!");
-      clearReg();
+    // Send confirmation messages
+    if (phone) {
+      const msgs = {
+        critical:`HealthQueue: You are CRITICAL. Ticket: ${ticket}. Stay at Emergency reception now.`,
+        urgent:  `HealthQueue: Registered. Ticket: ${ticket}. Est wait ~25 min. SMS alert when 3 away.`,
+        routine: `HealthQueue: Registered. Ticket: ${ticket}. Est wait ~65 min. Wait nearby — we'll alert you.`,
+        booked:  `HealthQueue: Appointment confirmed. Ticket: ${ticket}. Est wait ~30 min.`,
+      };
+      const msg = msgs[selTriageVal];
+      const chk_sms = document.getElementById('chk-sms').checked;
+      const chk_wa  = document.getElementById('chk-wa').checked;
+      const channel = chk_sms && chk_wa ? 'both' : chk_wa ? 'whatsapp' : chk_sms ? 'sms' : null;
+      if (channel) {
+        try {
+          await sendAndLog(`${first} ${last}`, phone, msg, channel);
+        } catch(smsErr) {
+          toast(`Patient added but message failed: ${smsErr.message}`, 'error');
+        }
+      }
     }
-  } catch (err) {
-    alert("Connection error occurred. Double check your API Keys.");
-    console.error(err);
+
+    toast(`✓ ${first} ${last} added — Ticket ${ticket}`, 'success');
+    clearReg();
+    nav('queue');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerText = "Register & Add to Queue";
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg> Register &amp; Add to Queue';
   }
 }
 
-// Auto-run UI configuration defaults on system boot
-selTriage('Routine');
-</script>
+function clearReg() {
+  ['r-first','r-last','r-id','r-phone','r-complaint','r-bp','r-temp','r-pulse','r-o2'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('r-dob').value='';
+  document.getElementById('r-gender').value='';
+  selTriageVal='';
+  ['critical','urgent','routine','booked'].forEach(t=>document.getElementById('tc-'+t).className='tcard');
+}
 
+function selTriage(t) {
+  selTriageVal = t;
+  ['critical','urgent','routine','booked'].forEach(x=>{
+    document.getElementById('tc-'+x).className = 'tcard' + (x===t?' sel-'+x:'');
+  });
+}
+
+// ═══════════════════════════════════════════
+// AUTO-NOTIFY — 3rd in queue
+// ═══════════════════════════════════════════
+async function autoNotify() {
+  const s = sortQ(queue);
+  if (s.length < 3) return;
+  const p = s[2]; // 3rd patient
+  if (!p.phone || notifiedSet.has(p.ticket)) return;
+  notifiedSet.add(p.ticket);
+  const msg = `HealthQueue: Your turn is 3 patients away. Ticket: ${p.ticket}. Please make your way to the clinic now.`;
+  try {
+    await sendAndLog(`${p.first_name} ${p.last_name}`, p.phone, msg, 'sms');
+    toast(`Auto-notified ${p.first_name} ${p.last_name} — 3rd in queue`, 'success');
+  } catch(e) { console.error('Auto-notify failed:', e); }
+}
+
+// ═══════════════════════════════════════════
+// RENDERS
+// ═══════════════════════════════════════════
+function refreshAll() {
+  renderDashboard();
+  const active = document.querySelector('.page.active')?.id;
+  if (active==='page-queue')     renderQueue();
+  if (active==='page-triage')    renderTriagePage();
+  if (active==='page-doctor')    renderDoctorList();
+  if (active==='page-display')   renderTV();
+  if (active==='page-analytics') renderAnalytics();
+  updateSMSDrop();
+  autoNotify();
+}
+
+function renderDashboard() {
+  const critical = queue.filter(p=>p.triage==='critical').length;
+  const avgWait  = queue.length ? Math.round(queue.reduce((a,p)=>a+(p.wait_minutes||0),0)/queue.length) : 0;
+  document.getElementById('m-queue').textContent    = queue.length;
+  document.getElementById('m-critical').textContent = critical;
+  document.getElementById('m-wait').textContent     = avgWait||'—';
+  document.getElementById('m-queue-sub').textContent= critical+' critical';
+  document.getElementById('fm-wait').textContent    = avgWait||'—';
+  const cb = document.getElementById('crit-badge');
+  cb.style.display = critical>0?'':'none';
+  if (critical>0) cb.textContent = critical;
+
+  // Top 5
+  const s = sortQ(queue).slice(0,5);
+  const tbl = document.getElementById('dash-table');
+  if (!s.length) {
+    tbl.innerHTML = '<tbody><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3);font-size:12px;">Queue is empty</td></tr></tbody>';
+  } else {
+    tbl.innerHTML = '<thead><tr><th>#</th><th>Patient</th><th>Triage</th><th>Wait</th><th></th></tr></thead><tbody>' +
+      s.map((p,i)=>`<tr onclick="openPat('${p.id}')">
+        <td style="font-family:'DM Mono',monospace;color:var(--text3);font-size:11px;">${String(i+1).padStart(2,'0')}</td>
+        <td><div class="pname">${p.first_name} ${p.last_name}</div><div class="psub">${p.complaint||''}</div></td>
+        <td><span class="badge ${TC[p.triage]?.badge||'badge-gray'}">${TC[p.triage]?.label||p.triage}</span></td>
+        <td><span class="wmono ${(p.wait_minutes||0)>60?'over':''}">${p.wait_minutes||0}m</span></td>
+        <td><span class="tdot ${TC[p.triage]?.dot||''}"></span></td>
+      </tr>`).join('')+'</tbody>';
+  }
+
+  // Triage breakdown
+  const counts={critical:0,urgent:0,routine:0,booked:0};
+  queue.forEach(p=>{ if(counts[p.triage]!==undefined) counts[p.triage]++; });
+  const total = queue.length||1;
+  document.getElementById('triage-panel').innerHTML =
+    Object.entries(counts).map(([t,c])=>`
+      <div class="prow">
+        <div class="plabel">
+          <span style="display:flex;align-items:center;gap:6px;"><span class="tdot ${TC[t].dot}"></span>${TC[t].label}</span>
+          <span style="font-family:'DM Mono',monospace;">${c}</span>
+        </div>
+        <div class="ptrack"><div class="pfill" style="width:${Math.round(c/total*100)}%;background:${TC[t].color};"></div></div>
+      </div>`).join('');
+
+  // System status
+  document.getElementById('sys-status-panel').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Supabase</span><span style="color:${dbOk?'var(--green)':'var(--red)'};">${dbOk?'● Connected':'● Reconnecting'}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Realtime</span><span style="color:var(--green);">● Active</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Infobip SMS</span><span style="color:var(--teal);">● Ready</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">WhatsApp</span><span style="color:var(--teal);">● Ready</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text3);">Project</span><span style="font-family:'DM Mono',monospace;color:var(--text2);font-size:10px;">lkjzcliscgelcldwqjnk</span></div>
+    </div>`;
+}
+
+function renderQueue() {
+  const tf = document.getElementById('qf-triage').value;
+  const df = document.getElementById('qf-dept').value;
+  let list = queue;
+  if (tf!=='all') list = list.filter(p=>p.triage===tf);
+  if (df!=='all') list = list.filter(p=>p.department===df);
+  const s = sortQ(list);
+  document.getElementById('q-count').textContent = s.length;
+  const cr=queue.filter(p=>p.triage==='critical').length;
+  const ur=queue.filter(p=>p.triage==='urgent').length;
+  document.getElementById('q-badges').innerHTML =
+    (cr?`<span class="badge badge-red">${cr} critical</span>`:'')+
+    (ur?`<span class="badge badge-amber">${ur} urgent</span>`:'');
+  const tbl = document.getElementById('full-table');
+  if (!s.length) {
+    tbl.innerHTML='<tbody><tr><td colspan="7" style="padding:28px;text-align:center;color:var(--text3);font-size:12px;">No patients match this filter</td></tr></tbody>'; return;
+  }
+  tbl.innerHTML = '<thead><tr><th>Ticket</th><th>Patient</th><th>Triage</th><th>Dept</th><th>Wait</th><th>Arrived</th><th>Action</th></tr></thead><tbody>' +
+    s.map(p=>`<tr onclick="openPat('${p.id}')">
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">${p.ticket}</td>
+      <td><div class="pname">${p.first_name} ${p.last_name}</div><div class="psub">${p.complaint||''}</div></td>
+      <td><span class="badge ${TC[p.triage]?.badge||'badge-gray'}">${TC[p.triage]?.label||p.triage}</span></td>
+      <td><span class="badge badge-gray">${p.department||'General'}</span></td>
+      <td><span class="wmono ${(p.wait_minutes||0)>60?'over':''}">${p.wait_minutes||0}m</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">${fmtTime(p.arrived_at)}</td>
+      <td onclick="event.stopPropagation()"><button class="btn btn-sm btn-primary" onclick="callById('${p.id}')">Call</button></td>
+    </tr>`).join('')+'</tbody>';
+}
+
+function renderTriagePage() {
+  document.getElementById('t-pending').textContent = queue.length + ' in queue';
+  const tbl = document.getElementById('triage-table');
+  if (!queue.length) { tbl.innerHTML='<tbody><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3);">Queue is empty</td></tr></tbody>'; return; }
+  tbl.innerHTML = '<thead><tr><th>Ticket</th><th>Patient</th><th>Complaint</th><th>Triage</th><th>Update</th></tr></thead><tbody>' +
+    sortQ(queue).map(p=>`<tr onclick="openPat('${p.id}')">
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">${p.ticket}</td>
+      <td><div class="pname">${p.first_name} ${p.last_name}</div></td>
+      <td><div class="psub" style="max-width:180px;">${p.complaint||''}</div></td>
+      <td><span class="badge ${TC[p.triage]?.badge||'badge-gray'}">${TC[p.triage]?.label||p.triage}</span></td>
+      <td onclick="event.stopPropagation()">
+        <select class="finput" style="font-size:11px;padding:3px 7px;" onchange="retriage('${p.id}',this.value)">
+          ${Object.keys(TC).map(t=>`<option value="${t}" ${t===p.triage?'selected':''}>${TC[t].label}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('')+'</tbody>';
+}
+
+async function retriage(id, t) {
+  const { error } = await db.from('queue_entries').update({triage:t}).eq('id',id);
+  if (!error) toast('Triage updated', 'success');
+  else toast('Error: '+error.message, 'error');
+}
+
+function renderDoctorList() {
+  const s = sortQ(queue).slice(0,8);
+  document.getElementById('doctor-list').innerHTML = s.length ? s.map(p=>`
+    <div style="background:${selectedDoctor===p.id?'var(--surface3)':'var(--surface2)'};border:1.5px solid ${selectedDoctor===p.id?'rgba(74,222,128,.3)':'var(--border)'};border-radius:var(--radius);padding:12px;margin-bottom:8px;cursor:pointer;transition:all .12s;" onclick="selectConsult('${p.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div style="font-weight:600;font-size:13px;">${p.first_name} ${p.last_name}</div>
+        <span class="badge ${TC[p.triage]?.badge||'badge-gray'}" style="font-size:9px;">${TC[p.triage]?.label||p.triage}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);">${(p.complaint||'').substring(0,50)}</div>
+      <div style="display:flex;gap:6px;margin-top:6px;"><span class="badge badge-gray" style="font-size:9px;">${p.department||'General'}</span><span style="font-size:10px;color:var(--text3);">${p.wait_minutes||0}m wait</span></div>
+    </div>`).join('') : '<div style="color:var(--text3);font-size:12px;">No patients in queue</div>';
+}
+
+function selectConsult(id) {
+  selectedDoctor = id;
+  renderDoctorList();
+  const p = queue.find(x=>x.id===id);
+  if (!p) return;
+  document.getElementById('consult-panel').innerHTML = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">${p.first_name} ${p.last_name} — ${p.ticket}</div><span class="badge ${TC[p.triage]?.badge||'badge-gray'}">${TC[p.triage]?.label||p.triage}</span></div>
+      <div class="card-body">
+        <div class="dgrid mb14">
+          ${[{k:'Department',v:p.department||'—'},{k:'Visit type',v:p.visit_type||'—'},{k:'Arrived',v:fmtTime(p.arrived_at)},{k:'Phone',v:p.phone||'—'}].map(d=>`<div class="ditem"><div class="dkey">${d.k}</div><div class="dval">${d.v}</div></div>`).join('')}
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;font-family:'Syne',sans-serif;">Chief Complaint</div>
+          <div style="font-size:13px;color:var(--text2);">${p.complaint||'—'}</div>
+        </div>
+        ${(p.bp||p.temp||p.pulse||p.o2)?`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+          ${[p.bp&&{k:'BP',v:p.bp},p.temp&&{k:'Temp',v:p.temp+'°C'},p.pulse&&{k:'Pulse',v:p.pulse+' bpm'},p.o2&&{k:'O₂',v:p.o2+'%'}].filter(Boolean).map(d=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;text-align:center;"><div style="font-size:10px;color:var(--text3);">${d.k}</div><div style="font-size:15px;font-weight:600;margin-top:2px;">${d.v}</div></div>`).join('')}
+        </div>`:''}
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;font-family:'Syne',sans-serif;">Clinical notes</div>
+          <textarea class="finput" placeholder="Enter findings, diagnosis, plan…" style="min-height:80px;width:100%;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" onclick="toast('Referral noted')">Refer</button>
+          <button class="btn" onclick="toast('Rx printed')">Print Rx</button>
+          <button class="btn btn-primary" onclick="completeConsult('${p.id}','${p.first_name} ${p.last_name}')">Complete &amp; Discharge</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function completeConsult(id, name) {
+  const { error } = await db.from('queue_entries').update({status:'seen',seen_at:new Date().toISOString()}).eq('id',id);
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  selectedDoctor=null;
+  document.getElementById('consult-panel').innerHTML='<div class="card"><div class="card-body" style="display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:8px;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div style="color:var(--text3);font-size:13px;">Select a patient to begin</div></div></div>';
+  toast(`✓ ${name} discharged`,'success');
+}
+
+function renderTV() {
+  const s = sortQ(queue);
+  const now = s[0];
+  const next = s.slice(1,6);
+  const lbl = '<div class="tv-lbl">';
+  document.getElementById('tv-now').innerHTML = lbl+'Now calling</div>' +
+    (now?`<div class="tv-now-card"><div class="tv-ticket">${now.ticket}</div><div><div class="tv-pname">${now.first_name} ${now.last_name}</div><div class="tv-pdept">${now.department||'General'}</div></div><div style="margin-left:auto;width:14px;height:14px;border-radius:50%;background:${TV_COLORS[now.triage]||'#4ade80'};box-shadow:0 0 14px ${TV_COLORS[now.triage]||'#4ade80'}55;"></div></div>`
+    :'<div style="color:rgba(255,255,255,.3);font-size:13px;">Queue is empty</div>');
+  document.getElementById('tv-next').innerHTML = lbl+'Next up</div>' +
+    next.map(p=>`<div class="tv-row"><div class="tv-tkt">${p.ticket}</div><div class="tv-nm">${p.first_name} ${p.last_name.charAt(0)}.</div><div class="tv-dept">${p.department||'General'}</div><div class="tv-dot" style="background:${TV_COLORS[p.triage]||'#4ade80'};"></div></div>`).join('');
+}
+
+function openTV() {
+  const s = sortQ(queue);
+  const now = s[0]; const next = s.slice(1,8);
+  const w = window.open('','_blank','width=1280,height=720');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HealthQueue Display</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#050a10;font-family:'Syne',sans-serif;color:white;height:100vh;display:flex;flex-direction:column;}
+  .h{background:#081018;padding:18px 40px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.06);}
+  .lg{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;}
+  .d{width:8px;height:8px;background:#4ade80;border-radius:50%;animation:p 2s ease-in-out infinite;}
+  @keyframes p{0%,100%{opacity:1}50%{opacity:.4}}
+  .ck{font-family:'DM Mono',monospace;font-size:24px;color:rgba(255,255,255,.4);}
+  .nw{padding:22px 40px;background:rgba(74,222,128,.03);border-bottom:1px solid rgba(255,255,255,.04);}
+  .lb{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px;}
+  .nc{display:flex;align-items:center;gap:20px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.14);border-radius:12px;padding:18px 24px;}
+  .tk{font-family:'DM Mono',monospace;font-size:48px;font-weight:400;color:#4ade80;min-width:130px;}
+  .pn{font-size:28px;font-weight:700;}
+  .pd{font-size:16px;color:rgba(255,255,255,.4);margin-top:5px;}
+  .nx{flex:1;padding:16px 40px;}
+  .rw{display:flex;align-items:center;gap:16px;padding:10px 16px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:6px;border:1px solid rgba(255,255,255,.05);}
+  .rt{font-family:'DM Mono',monospace;font-size:20px;min-width:90px;}
+  .rn{font-size:17px;flex:1;}
+  .rd{font-size:13px;color:rgba(255,255,255,.3);}
+  .dot{width:12px;height:12px;border-radius:50%;}
+  .ft{padding:12px 40px;border-top:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.25);}
+  </style></head><body>
+  <div class="h"><div class="lg"><span class="d"></span>HealthQueue</div><div class="ck" id="c">--:--</div></div>
+  ${now?`<div class="nw"><div class="lb">Now calling</div><div class="nc"><div class="tk">${now.ticket}</div><div><div class="pn">${now.first_name} ${now.last_name}</div><div class="pd">${now.department||'General'}</div></div><div style="margin-left:auto;width:16px;height:16px;border-radius:50%;background:${TV_COLORS[now.triage]||'#4ade80'};box-shadow:0 0 18px ${TV_COLORS[now.triage]||'#4ade80'}77;"></div></div></div>`:''}
+  <div class="nx"><div class="lb">Next up</div>${next.map(p=>`<div class="rw"><div class="rt">${p.ticket}</div><div class="rn">${p.first_name} ${p.last_name}</div><div class="rd">${p.department||'General'}</div><div class="dot" style="background:${TV_COLORS[p.triage]||'#4ade80'};"></div></div>`).join('')}</div>
+  <div class="ft"><span>Please wait to be called · SMS QUEUE to 31234</span><span>Powered by HealthQueue · Infobip · Supabase</span></div>
+  <script>setInterval(()=>{const n=new Date();document.getElementById('c').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');},1000);<\/script>
+  </body></html>`);
+}
+
+// ═══════════════════════════════════════════
+// PATIENT MODAL
+// ═══════════════════════════════════════════
+function openPat(id) {
+  const p = queue.find(x=>x.id===id); if (!p) return;
+  activePatient = p;
+  const tc = TC[p.triage]||TC.routine;
+  document.getElementById('m-pname').textContent = `${p.first_name} ${p.last_name}`;
+  document.getElementById('m-triage-bar').style.cssText = `background:${tc.bg};border:1px solid ${tc.border};color:${tc.color};padding:8px 12px;border-radius:6px;margin-bottom:14px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:.04em;`;
+  document.getElementById('m-triage-bar').textContent = '⬤  '+tc.label+(p.triage==='critical'?' — Immediate attention required':p.triage==='urgent'?' — Needs care within 30 minutes':'');
+  document.getElementById('m-complaint').textContent = p.complaint||'—';
+  document.getElementById('m-details').innerHTML = [
+    {k:'Ticket',v:p.ticket},{k:'Department',v:p.department||'General'},
+    {k:'Phone',v:p.phone||'—'},{k:'Visit type',v:p.visit_type||'Walk-in'},
+    {k:'Arrived',v:fmtTime(p.arrived_at)},{k:'Est. wait',v:(p.wait_minutes||0)+' min'},
+  ].map(d=>`<div class="ditem"><div class="dkey">${d.k}</div><div class="dval">${d.v}</div></div>`).join('');
+  if (p.bp||p.temp||p.pulse||p.o2) {
+    document.getElementById('m-vitals-wrap').style.display='';
+    document.getElementById('m-vitals').innerHTML=[p.bp&&{k:'BP',v:p.bp+' mmHg'},p.temp&&{k:'Temp',v:p.temp+'°C'},p.pulse&&{k:'Pulse',v:p.pulse+' bpm'},p.o2&&{k:'O₂',v:p.o2+'%'}].filter(Boolean).map(d=>`<div class="ditem"><div class="dkey">${d.k}</div><div class="dval">${d.v}</div></div>`).join('');
+  } else document.getElementById('m-vitals-wrap').style.display='none';
+  document.getElementById('pat-modal').classList.add('open');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function callPatient() {
+  if (!activePatient) return;
+  toast(`📢 Calling ${activePatient.first_name} ${activePatient.last_name} — ${activePatient.ticket}`);
+  closeModal('pat-modal');
+}
+
+function callById(id) {
+  const p=queue.find(x=>x.id===id);
+  if(p) toast(`📢 Calling ${p.first_name} ${p.last_name} — ${p.ticket}`);
+}
+
+async function markSeen() {
+  if (!activePatient) return;
+  const { error } = await db.from('queue_entries').update({status:'seen',seen_at:new Date().toISOString()}).eq('id',activePatient.id);
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  toast(`✓ ${activePatient.first_name} ${activePatient.last_name} marked as seen`,'success');
+  closeModal('pat-modal');
+}
+
+// ═══════════════════════════════════════════
+// KIOSK
+// ═══════════════════════════════════════════
+async function kioskCheckin() {
+  const name   = document.getElementById('k-name').value.trim();
+  const phone  = document.getElementById('k-phone').value.trim();
+  const reason = document.getElementById('k-reason').value;
+  if (!name||!reason) { toast('⚠ Enter name and reason'); return; }
+  const triage = reason.includes('Emergency')?'urgent':reason.includes('medication')||reason.includes('results')||reason.includes('Follow')?'booked':'routine';
+  const waitMap = {critical:10,urgent:25,booked:25,routine:60};
+  const ticket = 'P'+String(nextTicket++).padStart(3,'0');
+  const [first,...rest] = name.trim().split(' ');
+  try {
+    const { error } = await db.from('queue_entries').insert([{
+      ticket, first_name:first, last_name:rest.join(' ')||'(kiosk)',
+      phone:phone||null, complaint:reason, triage, department:'General',
+      visit_type:'Walk-in', wait_minutes:waitMap[triage], status:'waiting'
+    }]);
+    if (error) throw error;
+    if (phone) {
+      const msg = `HealthQueue: Checked in! Ticket: ${ticket}. Est wait ~${waitMap[triage]} min. SMS alert when your turn is close.`;
+      try { await sendAndLog(name, phone, msg, 'sms'); } catch(e) {}
+    }
+    document.getElementById('k-ticket').textContent = ticket;
+    document.getElementById('k-wait').textContent = `Estimated wait: ~${waitMap[triage]} minutes`;
+    document.getElementById('kiosk-result').style.display = '';
+    document.getElementById('k-name').value='';
+    document.getElementById('k-phone').value='';
+    document.getElementById('k-reason').value='';
+    toast(`✓ Checked in — Ticket ${ticket}`,'success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════
+// SMS PAGE
+// ═══════════════════════════════════════════
+function updateSMSDrop() {
+  const sel = document.getElementById('sms-patient');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Select patient…</option>' +
+    sortQ(queue).map(p=>`<option value="${p.id}">${p.first_name} ${p.last_name} (${p.ticket})</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+const TMPLS = {
+  'turn-soon':   'HealthQueue: Your turn is 3 patients away. Please make your way to the clinic now.',
+  'ready':       'HealthQueue: It is your turn. Please report to the reception desk immediately.',
+  'missed':      'HealthQueue: You missed your turn. Please return to reception to be re-queued.',
+  'appointment': 'HealthQueue: Reminder — you have an appointment today. Please arrive 15 minutes early.',
+  'results':     'HealthQueue: Your test results are ready. Please visit the clinic during operating hours.',
+};
+
+function fillTmpl() {
+  const t = document.getElementById('sms-tmpl').value;
+  if (TMPLS[t]) { document.getElementById('sms-msg').value=TMPLS[t]; document.getElementById('char-cnt').textContent=TMPLS[t].length+'/160'; }
+}
+
+async function sendMessage() {
+  const pid     = document.getElementById('sms-patient').value;
+  const msg     = document.getElementById('sms-msg').value.trim();
+  const channel = document.getElementById('sms-channel').value;
+  if (!pid) { toast('⚠ Select a patient'); return; }
+  if (!msg) { toast('⚠ Enter a message'); return; }
+  const p = queue.find(x=>x.id===pid);
+  if (!p?.phone) { toast('⚠ Patient has no phone number'); return; }
+  const btn = document.getElementById('send-btn');
+  btn.disabled=true; btn.textContent='Sending…';
+  try {
+    await sendAndLog(`${p.first_name} ${p.last_name}`, p.phone, msg, channel);
+    toast(`✓ Message sent to ${p.first_name} ${p.last_name}`,'success');
+    document.getElementById('sms-msg').value='';
+    document.getElementById('sms-tmpl').value='';
+  } catch(e) { toast('Send failed: '+e.message,'error'); }
+  finally {
+    btn.disabled=false;
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg> Send via Infobip';
+  }
+}
+
+function renderSMSLog() {
+  const panel = document.getElementById('sms-log-panel');
+  if (!panel) return;
+  document.getElementById('sms-log-badge').textContent = smsLogData.length+' sent';
+  document.getElementById('fm-sms').textContent = smsLogData.filter(s=>s.status==='sent').length;
+  if (!smsLogData.length) { panel.innerHTML='<div style="color:var(--text3);font-size:12px;">No messages yet</div>'; return; }
+  panel.innerHTML = smsLogData.slice(0,15).map(s=>`
+    <div class="sms-item">
+      <div class="sms-time">${fmtTime(s.created_at)}</div>
+      <div class="sms-recip">${s.patient_name||'—'}</div>
+      <div class="sms-msg">${(s.message||'').substring(0,80)}${(s.message||'').length>80?'…':''}</div>
+      <span class="badge ${s.status==='sent'?'badge-teal':'badge-red'}" style="align-self:center;">${s.channel==='whatsapp'?'📱 WA':s.channel==='both'?'📲 Both':'💬 SMS'} ${s.status==='sent'?'✓':'✗'}</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════
+function renderAnalytics() {
+  const hrs=[3,6,9,14,19,22,18,14,11,8,5,3];
+  const lbls=['7','8','9','10','11','12','1','2','3','4','5','6'];
+  const mx=Math.max(...hrs);
+  document.getElementById('hourly-bars').innerHTML=hrs.map((h,i)=>`<div class="bar" style="height:${Math.round(h/mx*75)}px;background:${h>16?'var(--red)':h>10?'var(--amber)':'var(--blue)'};opacity:.75;"></div>`).join('');
+  document.getElementById('hourly-lbls').innerHTML=lbls.map(l=>`<div class="blbl">${l}</div>`).join('');
+  const counts={critical:0,urgent:0,routine:0,booked:0};
+  queue.forEach(p=>{if(counts[p.triage]!==undefined)counts[p.triage]++;});
+  const total=queue.length||1;
+  document.getElementById('an-triage').innerHTML=Object.entries(counts).map(([t,c])=>`
+    <div class="prow"><div class="plabel"><span style="display:flex;align-items:center;gap:6px;"><span class="tdot ${TC[t].dot}"></span>${TC[t].label}</span><span style="font-family:'DM Mono',monospace;">${c} (${Math.round(c/total*100)}%)</span></div>
+    <div class="ptrack"><div class="pfill" style="width:${Math.round(c/total*100)}%;background:${TC[t].color};"></div></div></div>`).join('');
+  const depts=['General','Emergency','Chronic','Orthopaedics','Maternal'];
+  const dc={};depts.forEach(d=>dc[d]=queue.filter(p=>p.department===d).length);
+  const mx2=Math.max(...Object.values(dc),1);
+  document.getElementById('an-depts').innerHTML=depts.map(d=>`
+    <div class="prow"><div class="plabel"><span>${d}</span><span style="font-family:'DM Mono',monospace;">${dc[d]}</span></div>
+    <div class="ptrack"><div class="pfill" style="width:${Math.round(dc[d]/mx2*100)}%;background:${dc[d]/mx2>.8?'var(--red)':dc[d]/mx2>.5?'var(--amber)':'var(--blue)'};"></div></div></div>`).join('');
+  document.getElementById('perf-panel').innerHTML=[
+    {l:'Patients seen',v:totalSeen,t:100,pct:Math.min(100,totalSeen),c:'var(--green)'},
+    {l:'Critical immediate',v:'100%',t:'100%',pct:100,c:'var(--green)'},
+    {l:'SMS notifications',v:ibCount,t:24,pct:Math.min(100,Math.round(ibCount/24*100)),c:'var(--teal)'},
+  ].map(x=>`<div class="prow"><div class="plabel"><span style="color:var(--text2);">${x.l}</span><span style="font-family:'DM Mono',monospace;">${x.v}<span style="color:var(--text3);"> / ${x.t}</span></span></div><div class="ptrack"><div class="pfill" style="width:${x.pct}%;background:${x.c};"></div></div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// FACILITY / STAFF
+// ═══════════════════════════════════════════
+function renderStaff() {
+  const panel = document.getElementById('staff-panel');
+  if (!panel) return;
+  if (!staffData.length) { panel.innerHTML='<div style="color:var(--text3);font-size:12px;">No staff data. Run SQL schema first.</div>'; return; }
+  panel.innerHTML = staffData.map(s=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div><div style="font-weight:500;font-size:13px;">${s.name}</div><div style="font-size:11px;color:var(--text3);">${s.role} · ${s.department||''}</div></div>
+      <div style="text-align:right;">
+        <span class="badge badge-green">On duty</span>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace;">${s.shift||''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function saveSettings() {
+  const name = document.getElementById('set-clinic').value;
+  document.getElementById('clinic-label').textContent = name;
+  toast('✓ Settings saved','success');
+}
+
+function copySQL() {
+  const sql = document.getElementById('sql-display').textContent;
+  navigator.clipboard.writeText(sql).then(()=>toast('SQL copied to clipboard','success')).catch(()=>toast('Copy failed — select text manually'));
+}
+
+// ═══════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════
+const TITLES = {dashboard:'Dashboard',queue:'Live Queue',register:'Register Patient',triage:'Triage',doctor:'Doctor Console',kiosk:'Self-Check-In',display:'TV Display Board',sms:'SMS / WhatsApp',analytics:'Analytics',facility:'Facility Manager'};
+
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')?.includes("'"+page+"'")) n.classList.add('active'); });
+  document.getElementById('page-title').textContent = TITLES[page]||page;
+  if(page==='queue')     renderQueue();
+  if(page==='triage')    renderTriagePage();
+  if(page==='doctor')    renderDoctorList();
+  if(page==='display')   renderTV();
+  if(page==='sms')       { renderSMSLog(); updateSMSDrop(); }
+  if(page==='analytics') renderAnalytics();
+  if(page==='facility')  { renderStaff(); document.getElementById('fm-seen').textContent=totalSeen; }
+}
+
+// ═══════════════════════════════════════════
+// TOAST / NOTIF
+// ═══════════════════════════════════════════
+function toast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(type?' '+type:''); t.style.display='block';
+  clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',3200);
+}
+
+function showNotif(title, msg) {
+  document.getElementById('n-title').textContent=title;
+  document.getElementById('n-msg').textContent=msg;
+  const n=document.getElementById('notif'); n.style.display='block';
+  clearTimeout(n._t); n._t=setTimeout(()=>n.style.display='none',4000);
+}
+
+// ═══════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════
+function tick() {
+  const t=new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('clock').textContent=t;
+  const tv=document.getElementById('tv-clock'); if(tv) tv.textContent=t;
+}
+tick(); setInterval(tick,15000);
+
+// ═══════════════════════════════════════════
+// SQL SCHEMA preview string (for facility page)
+// ═══════════════════════════════════════════
+const SQL_SCHEMA_PREVIEW = `-- Run in Supabase SQL Editor
+CREATE TABLE IF NOT EXISTS queue_entries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  ticket TEXT NOT NULL UNIQUE,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  phone TEXT, complaint TEXT,
+  triage TEXT NOT NULL DEFAULT 'routine',
+  department TEXT DEFAULT 'General',
+  visit_type TEXT DEFAULT 'Walk-in',
+  wait_minutes INTEGER DEFAULT 45,
+  status TEXT DEFAULT 'waiting',
+  bp TEXT, temp TEXT, pulse TEXT, o2 TEXT,
+  arrived_at TIMESTAMPTZ DEFAULT now(),
+  seen_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS sms_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  patient_name TEXT, phone TEXT, message TEXT,
+  channel TEXT DEFAULT 'sms', status TEXT DEFAULT 'sent',
+  provider TEXT DEFAULT 'infobip', message_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS staff (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL, role TEXT NOT NULL,
+  department TEXT, shift TEXT,
+  is_on_duty BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER PUBLICATION supabase_realtime ADD TABLE queue_entries;
+ALTER PUBLICATION supabase_realtime ADD TABLE sms_log;
+-- Enable RLS
+ALTER TABLE queue_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sms_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_all" ON queue_entries FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON sms_log FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all" ON staff FOR ALL USING (true) WITH CHECK (true);`;
+
+// Replace placeholder in SQL display
+document.getElementById('sql-display').textContent = SQL_SCHEMA_PREVIEW;
+
+// ═══════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════
+async function boot() {
+  try {
+    await fetchQueue();
+    await fetchSMSLog();
+    await fetchStaff();
+    subscribeRealtime();
+  } catch(e) {
+    console.error('Boot error:', e);
+    setConn(false);
+    toast('Could not connect: '+e.message,'error');
+  }
+}
+
+boot();
+</script>
 </body>
 </html>
