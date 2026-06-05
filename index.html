@@ -747,9 +747,12 @@ const IB_WA_SENDER = '27600123456'; // your Infobip WhatsApp sender number
 const { createClient } = supabase;
 const db = createClient(SB_URL, SB_ANON);
 
-// ═══════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════
+// ==========================================
+// 1. SUPABASE INIT & CONFIG (Your Existing Code)
+// ==========================================
+const { createClient } = supabase;
+const db = createClient(SB_URL, SB_ANON);
+
 const TC = {
   critical:{ label:'Critical',  dot:'critical', badge:'badge-red',   color:'var(--red)',   bg:'var(--red-dim)',   border:'rgba(248,113,113,.2)' },
   urgent:  { label:'Urgent',    dot:'urgent',   badge:'badge-amber', color:'var(--amber)', bg:'var(--amber-dim)', border:'rgba(251,191,36,.2)' },
@@ -759,6 +762,9 @@ const TC = {
 const PRIO = { critical:0, urgent:1, booked:2, routine:3 };
 const TV_COLORS = { critical:'#f87171', urgent:'#fbbf24', routine:'#4ade80', booked:'#60a5fa' };
 
+// ==========================================
+// 2. STATE APPARATUS (Your Existing Code)
+// ==========================================
 let queue = [];
 let smsLogData = [];
 let staffData = [];
@@ -787,6 +793,83 @@ function fmtPhone(raw) {
   if (p.startsWith('+')) p = p.slice(1);
   return p;
 }
+
+
+// ═══════════════════════════════════════════
+// ADD IT HERE: DATABASE INTERACTION LAYER
+// ═══════════════════════════════════════════
+
+// Pull data from Supabase explicitly
+async function fetchPatients() {
+  const { data, error } = await db
+    .from('patients') 
+    .select('*')
+    .in('status', ['waiting', 'triage', 'consulting']); // Adjust status strings to match your logic
+
+  if (error) {
+    console.error("Database connection failure:", error.message);
+    dbOk = false;
+    updateConnStatusUI(false);
+    return;
+  }
+
+  dbOk = true;
+  updateConnStatusUI(true);
+
+  // Map fields if your DB table uses different keys (like triage_category vs triage)
+  queue = data.map(p => ({
+    ...p,
+    triage: p.triage_category || p.triage 
+  }));
+
+  // Organize the local queue by priority
+  queue = sortQ(queue);
+
+  // Execute your UI rendering function to paint rows on the screen
+  if (typeof processAndRenderUI === 'function') {
+    processAndRenderUI();
+  }
+}
+
+// Watch for modifications without requiring a manual refresh
+function setupRealtimeStream() {
+  db.channel('live-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'patients' }, (payload) => {
+      console.log('Real-time ledger modification detected:', payload);
+      fetchPatients(); // Re-sync local array data and update view elements
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+         console.log("Realtime connection pipe initialized successfully.");
+      }
+    });
+}
+
+// Simple status visual flag utility
+function updateConnStatusUI(isConnected) {
+  const statusLabel = document.getElementById('conn-status');
+  const rtStatus = document.getElementById('rt-status');
+  const banner = document.getElementById('conn-banner');
+
+  if (statusLabel) statusLabel.innerText = isConnected ? "connected" : "connecting...";
+  if (rtStatus) rtStatus.innerText = isConnected ? "Live" : "Offline";
+  if (banner) {
+    if (isConnected) banner.classList.remove('show');
+    else banner.classList.add('show');
+  }
+}
+
+
+// ==========================================
+// 3. UI INITIALIZATION & EVENT LISTENERS
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Execute database pickup routines when page elements are constructed
+  fetchPatients();
+  setupRealtimeStream();
+  
+  // Put any other setup routines (like clocks or tabs) below this line...
+});
 
 // ═══════════════════════════════════════════
 // INFOBIP — SMS
