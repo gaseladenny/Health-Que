@@ -868,30 +868,29 @@ async function sendAndLog(patientName, phone, message, channel) {
     if (r.ok) msgId = r.messageId;
   }
 
-  const failed = results.filter(r=>!r.ok);
-  const success = results.filter(r=>r.ok);
-
-  // Log to Supabase regardless (mark failed if all failed)
-  await db.from('sms_log').insert([{
-    patient_name: patientName,
-    phone,
-    message,
-    channel,
-    status: failed.length === results.length ? 'failed' : 'sent',
-    provider: 'infobip',
-    message_id: msgId,
-  }]);
-
-  ibCount += success.length;
-  document.getElementById('ib-count').textContent = ibCount;
-  document.getElementById('m-sms').textContent = ibCount;
-
-  if (failed.length > 0 && success.length === 0) {
-    throw new Error(failed[0].error || 'Send failed');
-  }
-  return { ok:true, results };
-}
-
+ // CHANGE THIS LINE IN YOUR CODE:
+const { data, error } = await db
+  .from('patients_queue') // <--- Point it to the brand new table name here!
+  .insert([
+    { 
+      first_name: 'Delmaine', 
+      surname: 'Hoggins',
+      sa_id_passport: '9706245364081',
+      date_of_birth: '1997-06-24', 
+      phone: '0835350094',
+      gender: 'Male',
+      chief_complaint: 'nausea',
+      department: 'General',
+      visit_type: 'Pre-booked',
+      triage_status: 'Pre-booked',
+      blood_pressure: '140/90',
+      temperature_c: 38.2,
+      pulse_bpm: 88,
+      o2_sat_percent: 96,
+      send_sms_confirmation: true,
+      send_whatsapp_confirmation: true
+    }
+  ]);
 // ═══════════════════════════════════════════
 // SUPABASE — fetch
 // ═══════════════════════════════════════════
