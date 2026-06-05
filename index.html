@@ -1,367 +1,723 @@
+cat > /mnt/user-data/outputs/healthqueue-live.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HealthQueue — Smart Clinic Management</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>HealthQueue — Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --bg: #f4f3ef;
-  --surface: #ffffff;
-  --surface2: #f9f8f5;
-  --border: #e8e6df;
-  --border2: #d4d1c7;
-  --text: #1a1916;
-  --text2: #6b6860;
-  --text3: #9e9b93;
-  --accent: #1a5c3a;
-  --accent-light: #e8f4ee;
-  --accent-text: #0f3d26;
-  --red: #c0392b; --red-bg: #fdf2f0; --red-border: #f5c6c0;
-  --amber: #b7620a; --amber-bg: #fef8f0; --amber-border: #f5d9a8;
-  --green: #1a6b3c; --green-bg: #f0f9f3; --green-border: #a8dbb8;
-  --blue: #1a4a7a; --blue-bg: #f0f5fb; --blue-border: #a8c4e8;
-  --purple: #5a3a8c; --purple-bg: #f5f0fb; --purple-border: #c8b0e8;
-  --radius: 10px;
-  --radius-sm: 6px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --bg: #0d0f0e;
+  --surface: #141716;
+  --surface2: #1a1d1b;
+  --surface3: #202420;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #edecea;
+  --text2: #9a9792;
+  --text3: #5a5855;
+  --green: #4ade80;
+  --green-dim: #1a3d26;
+  --green-mid: #22c55e;
+  --amber: #fbbf24;
+  --amber-dim: #3d2e0a;
+  --red: #f87171;
+  --red-dim: #3d1515;
+  --blue: #60a5fa;
+  --blue-dim: #0f2040;
+  --purple: #c084fc;
+  --purple-dim: #2a1040;
+  --teal: #2dd4bf;
+  --radius: 12px;
+  --radius-sm: 7px;
+  --accent: #4ade80;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
-button { font-family: inherit; cursor: pointer; }
-input, select, textarea { font-family: inherit; font-size: 14px; }
 
-/* ── Layout ─────────────────────────────────── */
-.app { display: flex; height: 100vh; overflow: hidden; }
-.sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; height: 54px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-.content { flex: 1; overflow-y: auto; padding: 20px 24px; }
-.page { display: none; }
-.page.active { display: block; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
 
-/* ── Sidebar ─────────────────────────────────── */
-.sidebar-brand { padding: 20px 18px 14px; border-bottom: 1px solid var(--border); }
-.sidebar-brand .logo { display: flex; align-items: center; gap: 8px; }
-.sidebar-brand .logo-icon { width: 30px; height: 30px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-.sidebar-brand .logo-icon svg { width: 16px; height: 16px; fill: white; }
-.sidebar-brand .logo-name { font-size: 15px; font-weight: 600; color: var(--text); }
-.sidebar-brand .clinic-name { font-size: 11px; color: var(--text3); margin-top: 4px; }
-.nav-section { padding: 14px 18px 4px; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; }
-.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 18px; font-size: 13px; color: var(--text2); cursor: pointer; border-left: 2px solid transparent; transition: all 0.12s; user-select: none; }
-.nav-item:hover { background: var(--surface2); color: var(--text); }
-.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-light); font-weight: 500; }
-.nav-item .nav-icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
-.nav-item.active .nav-icon { opacity: 1; }
-.nav-badge { margin-left: auto; background: var(--red); color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
-.sidebar-footer { margin-top: auto; padding: 14px 18px; border-top: 1px solid var(--border); }
-.sidebar-footer .user-name { font-size: 13px; font-weight: 500; }
-.sidebar-footer .user-role { font-size: 11px; color: var(--text3); margin-top: 1px; }
-
-/* ── Topbar ─────────────────────────────────── */
-.page-title { font-size: 16px; font-weight: 600; }
-.topbar-right { display: flex; align-items: center; gap: 10px; }
-.status-dot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
-.status-dot::before { content: ''; width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
-.time-display { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); background: var(--surface2); padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-
-/* ── Cards / Panels ─────────────────────────── */
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
-.card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.card-title svg { width: 15px; height: 15px; color: var(--text2); }
-.card-body { padding: 16px 18px; }
-
-/* ── Metrics ─────────────────────────────────── */
-.metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
-.metric { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
-.metric-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-.metric-value { font-size: 28px; font-weight: 300; color: var(--text); line-height: 1; }
-.metric-value.red { color: var(--red); }
-.metric-value.amber { color: var(--amber); }
-.metric-value.green { color: var(--green); }
-.metric-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
-
-/* ── Badges ─────────────────────────────────── */
-.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
-.badge-red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
-.badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
-.badge-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
-.badge-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
-.badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
-.badge-gray { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
-
-/* ── Buttons ─────────────────────────────────── */
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: all 0.12s; }
-.btn:hover { background: var(--surface2); border-color: var(--border2); }
-.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-.btn-primary:hover { background: var(--accent-text); }
-.btn-danger { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
-.btn-danger:hover { background: var(--red); color: white; }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
-.btn svg { width: 14px; height: 14px; flex-shrink: 0; }
-
-/* ── Queue Table ─────────────────────────────── */
-.queue-table { width: 100%; border-collapse: collapse; }
-.queue-table th { text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-.queue-table td { padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
-.queue-table tr:last-child td { border-bottom: none; }
-.queue-table tr:hover td { background: var(--surface2); cursor: pointer; }
-.priority-indicator { display: flex; align-items: center; gap: 8px; }
-.triage-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.triage-dot.critical { background: var(--red); box-shadow: 0 0 0 3px rgba(192,57,43,0.15); }
-.triage-dot.urgent { background: var(--amber); }
-.triage-dot.routine { background: var(--green); }
-.triage-dot.booked { background: var(--blue); }
-.patient-name { font-weight: 500; color: var(--text); }
-.patient-complaint { font-size: 12px; color: var(--text2); margin-top: 1px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wait-time { font-family: 'DM Mono', monospace; font-size: 13px; }
-.wait-time.over { color: var(--red); }
-
-/* ── Form ────────────────────────────────────── */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.form-group { display: flex; flex-direction: column; gap: 5px; }
-.form-group.full { grid-column: 1 / -1; }
-.form-label { font-size: 12px; font-weight: 500; color: var(--text2); }
-.form-input { border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 8px 12px; background: var(--surface); color: var(--text); transition: border-color 0.12s; outline: none; }
-.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,92,58,0.08); }
-.form-input::placeholder { color: var(--text3); }
-select.form-input { cursor: pointer; }
-textarea.form-input { resize: vertical; min-height: 72px; }
-
-/* ── Triage Selector ─────────────────────────── */
-.triage-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 4px; }
-.triage-card { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--surface); }
-.triage-card:hover { border-color: var(--border2); transform: translateY(-1px); }
-.triage-card.sel-critical { border-color: var(--red); background: var(--red-bg); }
-.triage-card.sel-urgent { border-color: var(--amber); background: var(--amber-bg); }
-.triage-card.sel-routine { border-color: var(--green); background: var(--green-bg); }
-.triage-card.sel-booked { border-color: var(--blue); background: var(--blue-bg); }
-.triage-card-icon { font-size: 22px; margin-bottom: 6px; }
-.triage-card-label { font-size: 12px; font-weight: 600; }
-.triage-card-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
-
-/* ── Analytics ───────────────────────────────── */
-.analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.chart-wrap { position: relative; }
-.bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 90px; padding: 0 4px; }
-.bar { flex: 1; border-radius: 4px 4px 0 0; min-width: 0; transition: opacity 0.2s; cursor: default; position: relative; }
-.bar:hover { opacity: 0.75; }
-.bar-labels { display: flex; gap: 4px; margin-top: 6px; padding: 0 4px; }
-.bar-lbl { flex: 1; font-size: 9px; text-align: center; color: var(--text3); font-family: 'DM Mono', monospace; }
-.sparkline { display: flex; align-items: flex-end; gap: 3px; height: 40px; }
-.spark { flex: 1; border-radius: 2px 2px 0 0; }
-.progress-row { margin-bottom: 12px; }
-.progress-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-.progress-track { height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
-.progress-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
-.cond-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.cond-row:last-child { border-bottom: none; }
-.cond-name { font-size: 13px; flex: 1; }
-.cond-count { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; min-width: 24px; text-align: right; }
-.cond-bar { width: 70px; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-.cond-fill { height: 100%; border-radius: 3px; }
-
-/* ── Kiosk ───────────────────────────────────── */
-.kiosk-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.qr-box { width: 120px; height: 120px; background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin: 0 auto; }
-.sms-code { background: var(--accent-light); border: 1px solid var(--green-border); border-radius: var(--radius); padding: 12px 16px; text-align: center; margin-top: 12px; }
-.sms-code .sms-keyword { font-size: 18px; font-weight: 600; color: var(--accent); font-family: 'DM Mono', monospace; }
-.sms-code .sms-number { font-size: 13px; color: var(--text2); margin-top: 2px; }
-
-/* ── TV Display Board ────────────────────────── */
-.tv-board { background: #0a1628; border-radius: var(--radius); overflow: hidden; }
-.tv-header { background: #0f2040; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.tv-logo { font-size: 16px; font-weight: 600; color: white; display: flex; align-items: center; gap: 8px; }
-.tv-header-right { font-family: 'DM Mono', monospace; font-size: 14px; color: rgba(255,255,255,0.5); }
-.tv-calling { padding: 14px 20px; }
-.tv-section-title { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 10px; }
-.tv-row { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.06); }
-.tv-ticket { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: white; min-width: 60px; }
-.tv-name { flex: 1; font-size: 14px; color: rgba(255,255,255,0.85); }
-.tv-dept { font-size: 12px; color: rgba(255,255,255,0.4); }
-.tv-triage-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-
-/* ── Doctor View ─────────────────────────────── */
-.doctor-grid { display: grid; grid-template-columns: 280px 1fr; gap: 16px; }
-.consult-card { background: var(--surface2); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; border: 1.5px solid var(--border); cursor: pointer; transition: all 0.12s; }
-.consult-card:hover { border-color: var(--accent); background: var(--accent-light); }
-.consult-card.selected { border-color: var(--accent); background: var(--accent-light); }
-.consult-card .c-name { font-weight: 600; font-size: 14px; }
-.consult-card .c-complaint { font-size: 12px; color: var(--text2); margin-top: 4px; }
-.consult-card .c-meta { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-.notes-area { width: 100%; min-height: 100px; }
-.prescription-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-
-/* ── Modal ───────────────────────────────────── */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
-.modal-overlay.open { display: flex; }
-.modal { background: var(--surface); border-radius: var(--radius); width: 480px; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
-.modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); }
-.modal-header h3 { font-size: 15px; font-weight: 600; }
-.modal-body { padding: 20px; }
-.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.detail-item .key { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin-bottom: 3px; }
-.detail-item .val { font-size: 14px; font-weight: 500; }
-
-/* ── Toast ───────────────────────────────────── */
-.toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: white; padding: 11px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; display: none; z-index: 999; box-shadow: var(--shadow-md); animation: slideUp 0.2s ease; max-width: 320px; }
-@keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-/* ── Scrollbar ───────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
+/* ── scrollbar ── */
+::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-/* ── Responsive helpers ──────────────────────── */
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-.mb-16 { margin-bottom: 16px; }
-.mb-12 { margin-bottom: 12px; }
+/* ── layout ── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── sidebar ── */
+.sidebar {
+  width: 210px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+}
+
+.brand-icon {
+  width: 28px; height: 28px;
+  background: var(--green);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.brand-icon svg { width: 14px; height: 14px; }
+
+.brand-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.brand-clinic {
+  font-size: 11px;
+  color: var(--text3);
+  padding-left: 37px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--green);
+  padding-left: 37px;
+  margin-top: 4px;
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.nav-section {
+  padding: 14px 18px 5px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  text-transform: uppercase;
+  font-family: 'Syne', sans-serif;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.12s;
+  user-select: none;
+  position: relative;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { color: var(--green); border-left-color: var(--green); background: rgba(74,222,128,0.06); font-weight: 500; }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.6; }
+.nav-item.active svg { opacity: 1; }
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: var(--bg);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-family: 'DM Mono', monospace;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.user-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.user-role { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+/* ── main ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 22px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.page-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--green);
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+}
+
+.clock {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.content { flex: 1; overflow-y: auto; padding: 18px 22px; }
+
+/* ── pages ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card-header {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.card-title svg { width: 14px; height: 14px; }
+.card-body { padding: 16px; }
+
+/* ── metrics ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent-color, var(--green));
+  opacity: 0.6;
+}
+
+.metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  text-transform: uppercase;
+  font-family: 'Syne', sans-serif;
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.metric-value.red { color: var(--red); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.green { color: var(--green); }
+.metric-value.blue { color: var(--blue); }
+
+.metric-sub {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 6px;
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+.badge-red    { background: var(--red-dim);    color: var(--red);    border: 1px solid rgba(248,113,113,0.2); }
+.badge-amber  { background: var(--amber-dim);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.2); }
+.badge-green  { background: var(--green-dim);  color: var(--green);  border: 1px solid rgba(74,222,128,0.2); }
+.badge-blue   { background: var(--blue-dim);   color: var(--blue);   border: 1px solid rgba(96,165,250,0.2); }
+.badge-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(192,132,252,0.2); }
+.badge-gray   { background: var(--surface3);   color: var(--text2);  border: 1px solid var(--border); }
+
+/* ── buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.btn:hover { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+
+.btn-primary {
+  background: var(--green);
+  color: var(--bg);
+  border-color: var(--green);
+  font-weight: 600;
+}
+
+.btn-primary:hover { background: var(--green-mid); }
+
+.btn-danger {
+  background: var(--red-dim);
+  color: var(--red);
+  border-color: rgba(248,113,113,0.2);
+}
+
+.btn-danger:hover { background: var(--red); color: var(--bg); }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn svg { width: 13px; height: 13px; }
+
+/* ── table ── */
+.queue-table { width: 100%; border-collapse: collapse; }
+
+.queue-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+  font-family: 'Syne', sans-serif;
+}
+
+.queue-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.queue-table tr:last-child td { border-bottom: none; }
+.queue-table tbody tr:hover td { background: var(--surface2); cursor: pointer; }
+
+.patient-name { font-weight: 500; color: var(--text); }
+.patient-sub { font-size: 11px; color: var(--text3); margin-top: 1px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wait-mono { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); }
+.wait-mono.over { color: var(--amber); }
+.triage-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.triage-dot.critical { background: var(--red); box-shadow: 0 0 6px rgba(248,113,113,0.5); }
+.triage-dot.urgent   { background: var(--amber); }
+.triage-dot.routine  { background: var(--green); }
+.triage-dot.booked   { background: var(--blue); }
+
+/* ── form ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; font-family: 'Syne', sans-serif; }
+
+.form-input {
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.form-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(74,222,128,0.08); }
+.form-input::placeholder { color: var(--text3); }
+select.form-input { cursor: pointer; }
+select.form-input option { background: var(--surface2); }
+textarea.form-input { resize: vertical; min-height: 70px; }
+
+/* ── triage selector ── */
+.triage-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+.triage-card {
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface2);
+}
+
+.triage-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+.triage-card.sel-critical { border-color: var(--red); background: var(--red-dim); }
+.triage-card.sel-urgent   { border-color: var(--amber); background: var(--amber-dim); }
+.triage-card.sel-routine  { border-color: var(--green); background: var(--green-dim); }
+.triage-card.sel-booked   { border-color: var(--blue); background: var(--blue-dim); }
+
+.triage-card-emoji { font-size: 20px; margin-bottom: 6px; }
+.triage-card-label { font-size: 12px; font-weight: 700; font-family: 'Syne', sans-serif; }
+.triage-card-desc { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* ── layout helpers ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.mb-14 { margin-bottom: 14px; }
+.mb-10 { margin-bottom: 10px; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .flex-gap { display: flex; align-items: center; gap: 8px; }
 
-/* ── SMS Log ─────────────────────────────────── */
-.sms-log-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
-.sms-log-item:last-child { border-bottom: none; }
-.sms-time { font-family: 'DM Mono', monospace; color: var(--text3); min-width: 45px; }
-.sms-recipient { font-weight: 500; min-width: 140px; }
+/* ── progress ── */
+.progress-row { margin-bottom: 10px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: var(--text2); }
+.progress-track { height: 5px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+/* ── SMS log ── */
+.sms-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.sms-item:last-child { border-bottom: none; }
+.sms-time { font-family: 'DM Mono', monospace; color: var(--text3); min-width: 44px; }
+.sms-recipient { font-weight: 500; color: var(--text); min-width: 130px; }
 .sms-msg { color: var(--text2); flex: 1; }
-.sms-status { font-size: 10px; padding: 2px 6px; border-radius: 10px; }
 
-/* ── Facility Manager ────────────────────────── */
-.facility-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-.big-stat { text-align: center; padding: 20px; }
-.big-stat .num { font-size: 40px; font-weight: 300; line-height: 1; }
-.big-stat .lbl { font-size: 12px; color: var(--text3); margin-top: 6px; }
-.big-stat .change { font-size: 12px; margin-top: 4px; }
-.change.up { color: var(--green); }
-.change.down { color: var(--red); }
-.shift-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-.shift-row:last-child { border-bottom: none; }
+/* ── kiosk ── */
+.kiosk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.qr-box { width: 110px; height: 110px; background: white; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; margin: 0 auto; padding: 8px; }
+.sms-highlight { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); border-radius: var(--radius); padding: 12px 16px; text-align: center; margin-top: 12px; }
 
-/* ── Divider ─────────────────────────────────── */
-.section-divider { height: 1px; background: var(--border); margin: 16px 0; }
+/* ── TV board ── */
+.tv-board { background: #050a10; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+.tv-header { background: #081018; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.tv-logo { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px; }
+.tv-logo .dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+.tv-time { font-family: 'DM Mono', monospace; font-size: 13px; color: rgba(255,255,255,0.3); }
+.tv-now { padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.tv-section-lbl { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 10px; font-family: 'Syne', sans-serif; }
+.tv-now-card { display: flex; align-items: center; gap: 16px; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.15); border-radius: 10px; padding: 14px 18px; }
+.tv-now-ticket { font-family: 'DM Mono', monospace; font-size: 36px; font-weight: 500; color: var(--green); min-width: 90px; }
+.tv-now-name { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 600; color: white; }
+.tv-now-dept { font-size: 13px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+.tv-next { padding: 12px 20px 16px; }
+.tv-row { display: flex; align-items: center; gap: 14px; padding: 9px 14px; background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.05); }
+.tv-ticket { font-family: 'DM Mono', monospace; font-size: 18px; color: rgba(255,255,255,0.7); min-width: 65px; }
+.tv-name { flex: 1; font-size: 15px; color: rgba(255,255,255,0.75); }
+.tv-dept { font-size: 12px; color: rgba(255,255,255,0.3); }
+.tv-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.tv-footer { padding: 10px 20px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.25); }
+
+/* ── modal ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: var(--radius); width: 460px; max-height: 85vh; overflow-y: auto; border: 1px solid var(--border2); box-shadow: 0 24px 80px rgba(0,0,0,0.6); }
+.modal-header { padding: 16px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.modal-header h3 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+.modal-body { padding: 18px; }
+.modal-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.detail-item .key { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 2px; font-family: 'Syne', sans-serif; }
+.detail-item .val { font-size: 13px; font-weight: 500; color: var(--text); }
+
+/* ── toast ── */
+.toast { position: fixed; bottom: 22px; right: 22px; background: var(--surface); color: var(--text); padding: 11px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; display: none; z-index: 999; border: 1px solid var(--border2); box-shadow: 0 8px 32px rgba(0,0,0,0.5); animation: slideUp 0.2s ease; max-width: 300px; }
+.toast.success { border-color: rgba(74,222,128,0.3); }
+.toast.error { border-color: rgba(248,113,113,0.3); }
+@keyframes slideUp { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── connection banner ── */
+.conn-banner { display: none; background: var(--red-dim); border-bottom: 1px solid rgba(248,113,113,0.2); padding: 8px 22px; font-size: 12px; color: var(--red); text-align: center; }
+.conn-banner.show { display: block; }
+
+/* ── loading ── */
+.loading-row td { text-align: center; padding: 32px; color: var(--text3); font-size: 13px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── empty state ── */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-state svg { width: 36px; height: 36px; margin-bottom: 10px; opacity: 0.3; }
+.empty-state p { font-size: 13px; margin-top: 6px; }
+
+/* ── realtime pulse ── */
+.realtime-pulse {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* ── setup screen ── */
+.setup-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setup-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 32px;
+  width: 440px;
+}
+
+.setup-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.setup-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+.setup-group { margin-bottom: 14px; }
+.setup-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 5px; font-family: 'Syne', sans-serif; }
+.setup-input { width: 100%; border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 9px 12px; background: var(--surface2); color: var(--text); font-size: 13px; outline: none; transition: border-color 0.12s; font-family: 'DM Mono', monospace; }
+.setup-input:focus { border-color: var(--green); }
+
+/* ── notification bubble ── */
+.notif-bubble {
+  position: fixed;
+  top: 16px; right: 16px;
+  background: var(--surface);
+  border: 1px solid rgba(74,222,128,0.3);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  width: 280px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 500;
+  animation: slideDown 0.25s ease;
+  display: none;
+}
+
+@keyframes slideDown { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.notif-title { font-size: 12px; font-weight: 600; color: var(--green); margin-bottom: 3px; font-family: 'Syne', sans-serif; }
+.notif-msg { font-size: 12px; color: var(--text2); }
+
+/* ── analytics bar ── */
+.bar-wrap { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
+.bar { flex: 1; border-radius: 3px 3px 0 0; min-width: 0; cursor: default; transition: opacity 0.2s; }
+.bar:hover { opacity: 0.7; }
+.bar-lbls { display: flex; gap: 4px; margin-top: 5px; }
+.bar-lbl { flex: 1; font-size: 9px; text-align: center; color: var(--text3); font-family: 'DM Mono', monospace; }
 </style>
 </head>
 <body>
 
+<!-- Connection banner -->
+<div class="conn-banner" id="conn-banner">⚠ Lost connection to Supabase — retrying...</div>
+
+<!-- App -->
 <div class="app">
-  <!-- ═══ SIDEBAR ═══ -->
+
+  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-brand">
-      <div class="logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/><path d="M11 6h2v2h-2zm0 10h2v2h-2z"/><rect x="11" y="7" width="2" height="10"/><rect x="7" y="11" width="10" height="2"/></svg>
+      <div class="brand-logo">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0d0f0e" stroke-width="2.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><rect x="11" y="7" width="2" height="10"/><rect x="7" y="11" width="10" height="2"/></svg>
         </div>
-        <span class="logo-name">HealthQueue</span>
+        <span class="brand-name">HealthQueue</span>
       </div>
-      <div class="clinic-name" id="clinic-name-display">Groote Schuur Clinic</div>
+      <div class="brand-clinic" id="clinic-label">Groote Schuur Clinic</div>
+      <div class="live-indicator"><span class="live-dot"></span><span id="conn-status">connecting...</span></div>
     </div>
 
     <span class="nav-section">Reception</span>
     <div class="nav-item active" onclick="nav('dashboard')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dashboard
-      <span class="nav-badge" id="critical-badge" style="display:none">2</span>
+      <span class="nav-badge" id="critical-nav-badge" style="display:none">!</span>
     </div>
     <div class="nav-item" onclick="nav('queue')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       Live Queue
     </div>
     <div class="nav-item" onclick="nav('register')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
       Register Patient
     </div>
 
     <span class="nav-section">Clinical</span>
     <div class="nav-item" onclick="nav('triage')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       Triage
     </div>
     <div class="nav-item" onclick="nav('doctor')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M8 12a4 4 0 0 0-4 4v2h16v-2a4 4 0 0 0-4-4"/><path d="M16 14v4m-2-2h4"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M8 12a4 4 0 0 0-4 4v2h16v-2a4 4 0 0 0-4-4"/></svg>
       Doctor Console
     </div>
 
     <span class="nav-section">Patient</span>
     <div class="nav-item" onclick="nav('kiosk')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
       Self-Check-In
     </div>
     <div class="nav-item" onclick="nav('display')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       TV Display
     </div>
     <div class="nav-item" onclick="nav('sms')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      SMS Notifications
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      SMS / WhatsApp
     </div>
 
     <span class="nav-section">Management</span>
     <div class="nav-item" onclick="nav('analytics')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Analytics
-    </div>
-    <div class="nav-item" onclick="nav('facility')">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      Facility Manager
     </div>
 
     <div class="sidebar-footer">
-      <div class="user-name" id="logged-user">Sister N. Dlamini</div>
-      <div class="user-role" id="logged-role">Reception · Shift A</div>
+      <div class="user-name">Sister N. Dlamini</div>
+      <div class="user-role">Reception · Shift A</div>
     </div>
   </div>
 
-  <!-- ═══ MAIN ═══ -->
+  <!-- MAIN -->
   <div class="main">
     <div class="topbar">
       <div class="page-title" id="page-title">Dashboard</div>
       <div class="topbar-right">
-        <div class="status-dot">System live</div>
-        <div class="time-display" id="clock">08:00</div>
+        <div class="status-pill">
+          <span class="realtime-pulse"></span>
+          <span id="realtime-status">Live</span>
+        </div>
+        <div class="clock" id="clock">--:--</div>
       </div>
     </div>
 
     <div class="content">
 
-      <!-- ══ DASHBOARD ══ -->
+      <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
         <div class="metrics-grid">
-          <div class="metric">
+          <div class="metric" style="--accent-color:var(--blue)">
             <div class="metric-label">In Queue</div>
-            <div class="metric-value" id="m-queue">24</div>
-            <div class="metric-sub" id="m-queue-sub">↑ 3 from last hour</div>
+            <div class="metric-value blue" id="m-queue">—</div>
+            <div class="metric-sub" id="m-queue-sub">loading...</div>
           </div>
-          <div class="metric">
+          <div class="metric" style="--accent-color:var(--amber)">
             <div class="metric-label">Avg Wait</div>
-            <div class="metric-value amber" id="m-wait">47<span style="font-size:16px">m</span></div>
-            <div class="metric-sub">↓ 8min vs yesterday</div>
+            <div class="metric-value amber" id="m-wait">—</div>
+            <div class="metric-sub">minutes</div>
           </div>
-          <div class="metric">
+          <div class="metric" style="--accent-color:var(--green)">
             <div class="metric-label">Seen Today</div>
-            <div class="metric-value green" id="m-seen">83</div>
-            <div class="metric-sub">Target: 100</div>
+            <div class="metric-value green" id="m-seen">—</div>
+            <div class="metric-sub">target: 100</div>
           </div>
-          <div class="metric">
+          <div class="metric" style="--accent-color:var(--red)">
             <div class="metric-label">Critical</div>
-            <div class="metric-value red" id="m-critical">2</div>
-            <div class="metric-sub">Needs immediate care</div>
+            <div class="metric-value red" id="m-critical">—</div>
+            <div class="metric-sub">immediate care</div>
           </div>
-          <div class="metric">
+          <div class="metric" style="--accent-color:var(--purple)">
             <div class="metric-label">SMS Sent</div>
-            <div class="metric-value" id="m-sms">18</div>
-            <div class="metric-sub">Today</div>
+            <div class="metric-value" id="m-sms">—</div>
+            <div class="metric-sub">today</div>
           </div>
         </div>
 
-        <div class="two-col mb-16">
+        <div class="two-col mb-14">
           <div class="card">
             <div class="card-header">
               <div class="card-title">
@@ -370,44 +726,44 @@ textarea.form-input { resize: vertical; min-height: 72px; }
               </div>
               <button class="btn btn-sm" onclick="nav('queue')">View all →</button>
             </div>
-            <table class="queue-table" id="dash-queue-table"></table>
+            <table class="queue-table" id="dash-queue-table">
+              <tbody><tr class="loading-row"><td colspan="5"><span class="spinner"></span>Loading from Supabase...</td></tr></tbody>
+            </table>
           </div>
-
           <div style="display:flex;flex-direction:column;gap:12px;">
             <div class="card">
               <div class="card-header"><div class="card-title">Triage breakdown</div></div>
-              <div class="card-body">
-                <div id="triage-breakdown"></div>
+              <div class="card-body" id="triage-breakdown-panel">
+                <div style="color:var(--text3);font-size:12px;">Loading...</div>
               </div>
             </div>
             <div class="card">
-              <div class="card-header"><div class="card-title">Peak hours today</div></div>
-              <div class="card-body">
-                <div class="bar-chart" id="dash-chart"></div>
-                <div class="bar-labels" id="dash-chart-labels"></div>
+              <div class="card-header"><div class="card-title">Supabase connection</div></div>
+              <div class="card-body" id="db-status-panel">
+                <div style="color:var(--text3);font-size:12px;">Connecting...</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ══ LIVE QUEUE ══ -->
+      <!-- LIVE QUEUE -->
       <div class="page" id="page-queue">
-        <div class="flex-between mb-16">
+        <div class="flex-between mb-14">
           <div class="flex-gap">
-            <select class="form-input" id="queue-filter" onchange="renderQueue()" style="width:160px;">
+            <select class="form-input" id="q-filter-triage" onchange="renderQueue()" style="width:150px;">
               <option value="all">All triage</option>
               <option value="critical">Critical</option>
               <option value="urgent">Urgent</option>
               <option value="routine">Routine</option>
               <option value="booked">Pre-booked</option>
             </select>
-            <select class="form-input" id="dept-filter" onchange="renderQueue()" style="width:140px;">
+            <select class="form-input" id="q-filter-dept" onchange="renderQueue()" style="width:140px;">
               <option value="all">All departments</option>
               <option value="Emergency">Emergency</option>
               <option value="General">General</option>
               <option value="Chronic">Chronic</option>
-              <option value="Ortho">Orthopaedics</option>
+              <option value="Orthopaedics">Orthopaedics</option>
               <option value="Maternal">Maternal</option>
             </select>
           </div>
@@ -418,23 +774,25 @@ textarea.form-input { resize: vertical; min-height: 72px; }
         </div>
         <div class="card">
           <div class="card-header">
-            <div class="card-title">Live queue — <span id="queue-count">24</span> patients</div>
-            <div class="flex-gap">
-              <span class="badge badge-red" id="q-critical-count"></span>
-              <span class="badge badge-amber" id="q-urgent-count"></span>
+            <div class="card-title">
+              <span class="realtime-pulse"></span>
+              Live queue — <span id="q-count">0</span> patients
             </div>
+            <div class="flex-gap" id="q-badges"></div>
           </div>
-          <table class="queue-table" id="full-queue-table"></table>
+          <table class="queue-table" id="full-queue-table">
+            <tbody><tr class="loading-row"><td colspan="7"><span class="spinner"></span>Loading...</td></tr></tbody>
+          </table>
         </div>
       </div>
 
-      <!-- ══ REGISTER PATIENT ══ -->
+      <!-- REGISTER -->
       <div class="page" id="page-register">
         <div class="two-col">
           <div class="card">
             <div class="card-header"><div class="card-title">Patient details</div></div>
             <div class="card-body">
-              <div class="form-grid mb-16">
+              <div class="form-grid mb-14">
                 <div class="form-group">
                   <label class="form-label">First name *</label>
                   <input class="form-input" id="reg-first" placeholder="e.g. Thandi">
@@ -445,99 +803,116 @@ textarea.form-input { resize: vertical; min-height: 72px; }
                 </div>
                 <div class="form-group">
                   <label class="form-label">SA ID / Passport</label>
-                  <input class="form-input" id="reg-id" placeholder="13-digit ID number">
+                  <input class="form-input" id="reg-id" placeholder="13-digit ID">
                 </div>
                 <div class="form-group">
                   <label class="form-label">Date of birth</label>
                   <input class="form-input" id="reg-dob" type="date">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Phone (SMS updates)</label>
+                  <label class="form-label">Phone (SMS / WhatsApp) *</label>
                   <input class="form-input" id="reg-phone" placeholder="07x xxx xxxx">
                 </div>
                 <div class="form-group">
                   <label class="form-label">Gender</label>
                   <select class="form-input" id="reg-gender">
                     <option value="">Select</option>
-                    <option>Female</option><option>Male</option><option>Non-binary</option><option>Prefer not to say</option>
+                    <option>Female</option><option>Male</option>
+                    <option>Non-binary</option><option>Prefer not to say</option>
                   </select>
                 </div>
                 <div class="form-group full">
                   <label class="form-label">Chief complaint *</label>
-                  <textarea class="form-input" id="reg-complaint" placeholder="Describe the patient's main symptoms..."></textarea>
+                  <textarea class="form-input" id="reg-complaint" placeholder="Describe main symptoms..."></textarea>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Department</label>
                   <select class="form-input" id="reg-dept">
-                    <option>General</option><option>Emergency</option><option>Chronic</option>
-                    <option>Orthopaedics</option><option>Maternal</option><option>Paediatrics</option>
+                    <option>General</option><option>Emergency</option>
+                    <option>Chronic</option><option>Orthopaedics</option>
+                    <option>Maternal</option><option>Paediatrics</option>
                   </select>
                 </div>
                 <div class="form-group">
                   <label class="form-label">Visit type</label>
                   <select class="form-input" id="reg-type">
-                    <option>Walk-in</option><option>Pre-booked</option><option>Referral</option><option>Follow-up</option>
+                    <option>Walk-in</option><option>Pre-booked</option>
+                    <option>Referral</option><option>Follow-up</option>
                   </select>
                 </div>
               </div>
             </div>
           </div>
-
           <div>
-            <div class="card mb-12">
+            <div class="card mb-10">
               <div class="card-header"><div class="card-title">Triage category *</div></div>
               <div class="card-body">
                 <div class="triage-grid">
                   <div class="triage-card" id="tc-critical" onclick="selectTriage('critical')">
-                    <div class="triage-card-icon">🔴</div>
+                    <div class="triage-card-emoji">🔴</div>
                     <div class="triage-card-label" style="color:var(--red)">Critical</div>
-                    <div class="triage-card-desc">Life-threatening · Immediate</div>
+                    <div class="triage-card-desc">Life-threatening</div>
                   </div>
                   <div class="triage-card" id="tc-urgent" onclick="selectTriage('urgent')">
-                    <div class="triage-card-icon">🟠</div>
+                    <div class="triage-card-emoji">🟠</div>
                     <div class="triage-card-label" style="color:var(--amber)">Urgent</div>
-                    <div class="triage-card-desc">Needs care soon · &lt;30min</div>
+                    <div class="triage-card-desc">Needs care soon</div>
                   </div>
                   <div class="triage-card" id="tc-routine" onclick="selectTriage('routine')">
-                    <div class="triage-card-icon">🟢</div>
+                    <div class="triage-card-emoji">🟢</div>
                     <div class="triage-card-label" style="color:var(--green)">Routine</div>
-                    <div class="triage-card-desc">Non-urgent · Can wait</div>
+                    <div class="triage-card-desc">Non-urgent</div>
                   </div>
                   <div class="triage-card" id="tc-booked" onclick="selectTriage('booked')">
-                    <div class="triage-card-icon">🔵</div>
+                    <div class="triage-card-emoji">🔵</div>
                     <div class="triage-card-label" style="color:var(--blue)">Pre-booked</div>
                     <div class="triage-card-desc">Has appointment</div>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="card">
-              <div class="card-header"><div class="card-title">Quick vitals (optional)</div></div>
+            <div class="card mb-10">
+              <div class="card-header"><div class="card-title">Quick vitals</div></div>
               <div class="card-body">
                 <div class="form-grid">
                   <div class="form-group">
                     <label class="form-label">Blood pressure</label>
-                    <input class="form-input" id="reg-bp" placeholder="e.g. 140/90">
+                    <input class="form-input" id="reg-bp" placeholder="140/90">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Temp (°C)</label>
-                    <input class="form-input" id="reg-temp" placeholder="e.g. 38.2">
+                    <label class="form-label">Temp °C</label>
+                    <input class="form-input" id="reg-temp" placeholder="38.2">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Pulse (bpm)</label>
-                    <input class="form-input" id="reg-pulse" placeholder="e.g. 88">
+                    <label class="form-label">Pulse bpm</label>
+                    <input class="form-input" id="reg-pulse" placeholder="88">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">O₂ sat (%)</label>
-                    <input class="form-input" id="reg-o2" placeholder="e.g. 96">
+                    <label class="form-label">O₂ sat %</label>
+                    <input class="form-input" id="reg-o2" placeholder="96">
                   </div>
                 </div>
               </div>
             </div>
-            <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+            <div class="card mb-10">
+              <div class="card-header"><div class="card-title">Messaging</div></div>
+              <div class="card-body">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);">
+                    <input type="checkbox" id="send-sms-on-reg" checked style="accent-color:var(--green);">
+                    Send SMS confirmation on registration
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);">
+                    <input type="checkbox" id="send-wa-on-reg" checked style="accent-color:var(--green);">
+                    Send WhatsApp confirmation
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
               <button class="btn" onclick="clearRegForm()">Clear</button>
-              <button class="btn btn-primary" onclick="registerPatient()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>
+              <button class="btn btn-primary" id="reg-btn" onclick="registerPatient()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
                 Register &amp; Add to Queue
               </button>
             </div>
@@ -545,47 +920,37 @@ textarea.form-input { resize: vertical; min-height: 72px; }
         </div>
       </div>
 
-      <!-- ══ TRIAGE ══ -->
+      <!-- TRIAGE -->
       <div class="page" id="page-triage">
         <div class="two-col">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Waiting for triage</div>
-              <span class="badge badge-amber" id="triage-waiting-count">5 pending</span>
+              <div class="card-title">Queue — triage view</div>
+              <span class="badge badge-amber" id="triage-pending">loading</span>
             </div>
-            <table class="queue-table" id="triage-table"></table>
+            <table class="queue-table" id="triage-table">
+              <tbody><tr class="loading-row"><td colspan="5"><span class="spinner"></span>Loading...</td></tr></tbody>
+            </table>
           </div>
           <div class="card">
-            <div class="card-header"><div class="card-title">SATS triage protocol</div></div>
+            <div class="card-header"><div class="card-title">SATS protocol</div></div>
             <div class="card-body">
               <div style="display:flex;flex-direction:column;gap:10px;">
-                <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--red-bg);border-radius:var(--radius-sm);border:1px solid var(--red-border);">
-                  <div style="width:12px;height:12px;border-radius:50%;background:var(--red);margin-top:2px;flex-shrink:0;"></div>
-                  <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--red)">Red — Immediate</div>
-                    <div style="font-size:12px;color:var(--text2);margin-top:2px;">Airway compromise, severe bleeding, unconscious, respiratory distress, shock</div>
-                  </div>
+                <div style="padding:10px 12px;background:var(--red-dim);border:1px solid rgba(248,113,113,0.2);border-radius:var(--radius-sm);">
+                  <div style="font-weight:700;font-size:12px;color:var(--red);margin-bottom:3px;">🔴 Red — Immediate</div>
+                  <div style="font-size:12px;color:var(--text2);">Airway compromise, severe bleeding, unconscious, respiratory distress, shock</div>
                 </div>
-                <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--amber-bg);border-radius:var(--radius-sm);border:1px solid var(--amber-border);">
-                  <div style="width:12px;height:12px;border-radius:50%;background:var(--amber);margin-top:2px;flex-shrink:0;"></div>
-                  <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--amber)">Orange — Very Urgent</div>
-                    <div style="font-size:12px;color:var(--text2);margin-top:2px;">Moderate pain, altered consciousness, burns &lt;10%, fractures, high fever &gt;39°C</div>
-                  </div>
+                <div style="padding:10px 12px;background:var(--amber-dim);border:1px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);">
+                  <div style="font-weight:700;font-size:12px;color:var(--amber);margin-bottom:3px;">🟠 Orange — Very Urgent</div>
+                  <div style="font-size:12px;color:var(--text2);">Moderate pain, altered consciousness, burns &lt;10%, fractures, high fever &gt;39°C</div>
                 </div>
-                <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--green-bg);border-radius:var(--radius-sm);border:1px solid var(--green-border);">
-                  <div style="width:12px;height:12px;border-radius:50%;background:var(--green);margin-top:2px;flex-shrink:0;"></div>
-                  <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--green)">Green — Routine</div>
-                    <div style="font-size:12px;color:var(--text2);margin-top:2px;">Minor injuries, chronic medication, follow-ups, minor infections, referral letters</div>
-                  </div>
+                <div style="padding:10px 12px;background:var(--green-dim);border:1px solid rgba(74,222,128,0.2);border-radius:var(--radius-sm);">
+                  <div style="font-weight:700;font-size:12px;color:var(--green);margin-bottom:3px;">🟢 Green — Routine</div>
+                  <div style="font-size:12px;color:var(--text2);">Minor injuries, chronic medication, follow-ups, referral letters</div>
                 </div>
-                <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--blue-bg);border-radius:var(--radius-sm);border:1px solid var(--blue-border);">
-                  <div style="width:12px;height:12px;border-radius:50%;background:var(--blue);margin-top:2px;flex-shrink:0;"></div>
-                  <div>
-                    <div style="font-weight:600;font-size:13px;color:var(--blue)">Blue — Pre-booked</div>
-                    <div style="font-size:12px;color:var(--text2);margin-top:2px;">Scheduled appointments, planned procedures, routine follow-ups with booking</div>
-                  </div>
+                <div style="padding:10px 12px;background:var(--blue-dim);border:1px solid rgba(96,165,250,0.2);border-radius:var(--radius-sm);">
+                  <div style="font-weight:700;font-size:12px;color:var(--blue);margin-bottom:3px;">🔵 Blue — Pre-booked</div>
+                  <div style="font-size:12px;color:var(--text2);">Scheduled appointments, planned procedures, routine follow-ups</div>
                 </div>
               </div>
             </div>
@@ -593,77 +958,69 @@ textarea.form-input { resize: vertical; min-height: 72px; }
         </div>
       </div>
 
-      <!-- ══ DOCTOR CONSOLE ══ -->
+      <!-- DOCTOR CONSOLE -->
       <div class="page" id="page-doctor">
-        <div class="doctor-grid">
+        <div style="display:grid;grid-template-columns:260px 1fr;gap:14px;">
           <div>
-            <div style="font-size:12px;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;font-weight:500;">My patients today</div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;font-family:'Syne',sans-serif;">My patients</div>
             <div id="doctor-list"></div>
           </div>
           <div id="consult-panel">
             <div class="card" style="height:100%;">
-              <div class="card-body" style="display:flex;align-items:center;justify-content:center;height:300px;flex-direction:column;gap:8px;">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <div style="color:var(--text3);font-size:13px;">Select a patient to begin consultation</div>
+              <div class="card-body" style="display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:8px;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <div style="color:var(--text3);font-size:13px;">Select a patient to begin</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ══ KIOSK ══ -->
+      <!-- KIOSK -->
       <div class="page" id="page-kiosk">
-        <div class="kiosk-layout">
+        <div class="kiosk-grid mb-14">
           <div class="card">
             <div class="card-header"><div class="card-title">Patient self-check-in</div></div>
             <div class="card-body" style="text-align:center;">
-              <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Patients can check in using phone or SMS — no smartphone required</div>
+              <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Check in via phone — no smartphone needed</div>
               <div class="qr-box">
                 <svg width="90" height="90" viewBox="0 0 90 90">
-                  <!-- QR code simulation -->
-                  <rect x="5" y="5" width="35" height="35" fill="none" stroke="var(--text)" stroke-width="2"/>
-                  <rect x="13" y="13" width="19" height="19" fill="var(--text)"/>
-                  <rect x="50" y="5" width="35" height="35" fill="none" stroke="var(--text)" stroke-width="2"/>
-                  <rect x="58" y="13" width="19" height="19" fill="var(--text)"/>
-                  <rect x="5" y="50" width="35" height="35" fill="none" stroke="var(--text)" stroke-width="2"/>
-                  <rect x="13" y="58" width="19" height="19" fill="var(--text)"/>
-                  <rect x="50" y="50" width="12" height="12" fill="var(--text)"/>
-                  <rect x="66" y="50" width="12" height="12" fill="var(--text)"/>
-                  <rect x="50" y="66" width="12" height="12" fill="var(--text)"/>
-                  <rect x="66" y="66" width="19" height="19" fill="var(--text)"/>
+                  <rect x="5" y="5" width="35" height="35" fill="none" stroke="#000" stroke-width="2"/>
+                  <rect x="13" y="13" width="19" height="19" fill="#000"/>
+                  <rect x="50" y="5" width="35" height="35" fill="none" stroke="#000" stroke-width="2"/>
+                  <rect x="58" y="13" width="19" height="19" fill="#000"/>
+                  <rect x="5" y="50" width="35" height="35" fill="none" stroke="#000" stroke-width="2"/>
+                  <rect x="13" y="58" width="19" height="19" fill="#000"/>
+                  <rect x="50" y="50" width="12" height="12" fill="#000"/>
+                  <rect x="66" y="50" width="12" height="12" fill="#000"/>
+                  <rect x="50" y="66" width="12" height="12" fill="#000"/>
+                  <rect x="66" y="66" width="19" height="19" fill="#000"/>
                 </svg>
               </div>
               <div style="font-size:12px;color:var(--text3);margin-top:8px;">Scan to check in via WhatsApp</div>
-              <div class="sms-code">
-                <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">No smartphone? SMS:</div>
-                <div class="sms-keyword">QUEUE</div>
-                <div class="sms-number">to <strong>31234</strong></div>
-              </div>
-              <div class="sms-code" style="margin-top:10px;background:var(--blue-bg);border-color:var(--blue-border);">
-                <div style="font-size:12px;color:var(--blue);margin-bottom:2px;">Missed your turn?</div>
-                <div style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace;color:var(--blue)">RETURN</div>
+              <div class="sms-highlight">
+                <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">No smartphone? SMS:</div>
+                <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--green);">QUEUE</div>
                 <div style="font-size:12px;color:var(--text2);">to <strong>31234</strong></div>
               </div>
             </div>
           </div>
-
           <div class="card">
-            <div class="card-header"><div class="card-title">Kiosk patient check-in</div></div>
+            <div class="card-header"><div class="card-title">Walk-up check-in</div></div>
             <div class="card-body">
-              <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">Quick self-registration for walk-in patients at the kiosk terminal</div>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div class="form-group">
                   <label class="form-label">Full name</label>
                   <input class="form-input" id="kiosk-name" placeholder="Your full name">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Phone number</label>
+                  <label class="form-label">Phone (for SMS)</label>
                   <input class="form-input" id="kiosk-phone" placeholder="07x xxx xxxx">
                 </div>
                 <div class="form-group">
                   <label class="form-label">Reason for visit</label>
                   <select class="form-input" id="kiosk-reason">
-                    <option value="">Select a reason...</option>
+                    <option value="">Select...</option>
                     <option>Collect chronic medication</option>
                     <option>Follow-up visit</option>
                     <option>New complaint / sick</option>
@@ -671,295 +1028,156 @@ textarea.form-input { resize: vertical; min-height: 72px; }
                     <option>Child immunisation</option>
                     <option>Test results</option>
                     <option>Emergency / Urgent</option>
-                    <option>Other</option>
                   </select>
                 </div>
                 <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;" onclick="kioskCheckin()">
                   Check In &amp; Get Queue Number
                 </button>
               </div>
-              <div id="kiosk-result" style="display:none;margin-top:14px;padding:16px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius);text-align:center;">
-                <div style="font-size:28px;font-weight:300;color:var(--green);font-family:'DM Mono',monospace;" id="kiosk-ticket">P025</div>
-                <div style="font-size:13px;color:var(--green);margin-top:4px;">Your queue number</div>
-                <div style="font-size:12px;color:var(--text2);margin-top:8px;" id="kiosk-wait-msg">Estimated wait: ~52 minutes</div>
-                <div style="font-size:11px;color:var(--text3);margin-top:4px;">You will receive an SMS when your turn is near</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="grid-column:1/-1;">
-            <div class="card-header"><div class="card-title">How it works — patient journey</div></div>
-            <div class="card-body">
-              <div style="display:flex;gap:0;align-items:flex-start;">
-                <div style="flex:1;text-align:center;padding:0 12px;">
-                  <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;margin:0 auto 8px;font-size:15px;">1</div>
-                  <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Check in</div>
-                  <div style="font-size:12px;color:var(--text2);">Scan QR, SMS, or use kiosk terminal</div>
-                </div>
-                <div style="padding-top:18px;color:var(--text3);font-size:18px;">→</div>
-                <div style="flex:1;text-align:center;padding:0 12px;">
-                  <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;margin:0 auto 8px;font-size:15px;">2</div>
-                  <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Get queue number</div>
-                  <div style="font-size:12px;color:var(--text2);">Receive ticket + estimated wait time</div>
-                </div>
-                <div style="padding-top:18px;color:var(--text3);font-size:18px;">→</div>
-                <div style="flex:1;text-align:center;padding:0 12px;">
-                  <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;margin:0 auto 8px;font-size:15px;">3</div>
-                  <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Wait anywhere</div>
-                  <div style="font-size:12px;color:var(--text2);">Go home, shop, rest — no need to sit in waiting room</div>
-                </div>
-                <div style="padding-top:18px;color:var(--text3);font-size:18px;">→</div>
-                <div style="flex:1;text-align:center;padding:0 12px;">
-                  <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;margin:0 auto 8px;font-size:15px;">4</div>
-                  <div style="font-weight:600;font-size:13px;margin-bottom:4px;">SMS alert</div>
-                  <div style="font-size:12px;color:var(--text2);">Receive SMS when 3 patients away from your turn</div>
-                </div>
-                <div style="padding-top:18px;color:var(--text3);font-size:18px;">→</div>
-                <div style="flex:1;text-align:center;padding:0 12px;">
-                  <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;margin:0 auto 8px;font-size:15px;">5</div>
-                  <div style="font-weight:600;font-size:13px;margin-bottom:4px;">See doctor</div>
-                  <div style="font-size:12px;color:var(--text2);">Arrive, confirm at reception, get seen promptly</div>
-                </div>
+              <div id="kiosk-result" style="display:none;margin-top:14px;padding:16px;background:var(--green-dim);border:1px solid rgba(74,222,128,0.2);border-radius:var(--radius);text-align:center;">
+                <div style="font-family:'DM Mono',monospace;font-size:32px;font-weight:500;color:var(--green);" id="kiosk-ticket">—</div>
+                <div style="font-size:12px;color:var(--green);margin-top:4px;">Your queue number</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:8px;" id="kiosk-wait-msg">—</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:4px;">SMS alert coming when your turn is near</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ══ TV DISPLAY ══ -->
+      <!-- TV DISPLAY -->
       <div class="page" id="page-display">
-        <div class="mb-12">
-          <div class="flex-between mb-12">
-            <div style="font-size:13px;color:var(--text2);">Live preview of the public TV display board. Open in full screen on a TV or monitor in the waiting area.</div>
-            <button class="btn btn-primary" onclick="openTVFullscreen()">Open Full Screen ↗</button>
-          </div>
+        <div class="flex-between mb-14">
+          <div style="font-size:13px;color:var(--text2);">Live display board — updates in real-time from Supabase</div>
+          <button class="btn btn-primary" onclick="openTVFullscreen()">Open Full Screen ↗</button>
         </div>
         <div class="tv-board" id="tv-board">
           <div class="tv-header">
-            <div class="tv-logo">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><rect x="11" y="7" width="2" height="10" fill="white"/><rect x="7" y="11" width="10" height="2" fill="white"/></svg>
-              HealthQueue
-            </div>
-            <div class="tv-header-right" id="tv-clock-display">08:00</div>
+            <div class="tv-logo"><span class="dot"></span>HealthQueue</div>
+            <div class="tv-time" id="tv-clock">--:--</div>
           </div>
-          <div class="tv-calling" id="tv-now-calling"></div>
-          <div style="padding:0 20px 16px;">
-            <div class="tv-section-title">Coming up next</div>
-            <div id="tv-next-up"></div>
-          </div>
-          <div style="padding:10px 20px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:12px;color:rgba(255,255,255,0.3);">Please wait to be called. Sit near the entrance when 3 patients away.</div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.3);">SMS <strong style="color:rgba(255,255,255,0.5)">QUEUE</strong> to 31234 for your number</div>
+          <div class="tv-now" id="tv-now-section"></div>
+          <div class="tv-next" id="tv-next-section"></div>
+          <div class="tv-footer">
+            <span>Wait to be called. SMS <strong>QUEUE</strong> to 31234</span>
+            <span>Powered by HealthQueue · Supabase Live</span>
           </div>
         </div>
       </div>
 
-      <!-- ══ SMS ══ -->
+      <!-- SMS / WHATSAPP -->
       <div class="page" id="page-sms">
-        <div class="two-col mb-16">
+        <div class="two-col mb-14">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Send SMS notification</div>
+              <div class="card-title">Send message</div>
+              <div class="flex-gap">
+                <span class="badge badge-green">Twilio</span>
+                <span class="badge badge-blue">WhatsApp</span>
+              </div>
             </div>
             <div class="card-body">
-              <div class="form-group mb-12">
+              <div class="form-group mb-10">
                 <label class="form-label">Patient</label>
-                <select class="form-input" id="sms-patient">
+                <select class="form-input" id="sms-patient-sel">
                   <option value="">Select patient...</option>
                 </select>
               </div>
-              <div class="form-group mb-12">
-                <label class="form-label">Message template</label>
-                <select class="form-input" id="sms-template" onchange="fillSMSTemplate()">
+              <div class="form-group mb-10">
+                <label class="form-label">Channel</label>
+                <select class="form-input" id="sms-channel">
+                  <option value="sms">SMS only</option>
+                  <option value="whatsapp">WhatsApp only</option>
+                  <option value="both">SMS + WhatsApp</option>
+                </select>
+              </div>
+              <div class="form-group mb-10">
+                <label class="form-label">Template</label>
+                <select class="form-input" id="sms-template" onchange="fillTemplate()">
                   <option value="">Choose template...</option>
-                  <option value="turn-soon">Turn soon (3 patients away)</option>
-                  <option value="ready">Ready now — please report to reception</option>
-                  <option value="missed">You missed your turn — please re-queue</option>
+                  <option value="turn-soon">Turn soon — 3 patients away</option>
+                  <option value="ready">Ready now — report to reception</option>
+                  <option value="missed">Missed turn — please re-queue</option>
                   <option value="appointment">Appointment reminder</option>
-                  <option value="results">Test results ready for collection</option>
+                  <option value="results">Test results ready</option>
                   <option value="custom">Custom message</option>
                 </select>
               </div>
-              <div class="form-group mb-12">
-                <label class="form-label">Message (160 chars max)</label>
-                <textarea class="form-input" id="sms-message" placeholder="Type message..." maxlength="160" style="min-height:80px;"></textarea>
-                <div style="font-size:11px;color:var(--text3);margin-top:3px;" id="sms-char-count">0 / 160</div>
+              <div class="form-group mb-10">
+                <label class="form-label">Message <span id="char-count" style="font-family:'DM Mono',monospace;font-weight:400;">0/160</span></label>
+                <textarea class="form-input" id="sms-msg" maxlength="160" placeholder="Type message..." style="min-height:80px;" oninput="document.getElementById('char-count').textContent=this.value.length+'/160'"></textarea>
               </div>
-              <button class="btn btn-primary" onclick="sendSMS()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Send SMS
+              <button class="btn btn-primary" id="send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg>
+                Send via Twilio
               </button>
             </div>
           </div>
           <div class="card">
             <div class="card-header">
-              <div class="card-title">Bulk SMS</div>
-              <span class="badge badge-green">Pro feature</span>
+              <div class="card-title">Twilio config</div>
+              <span class="badge badge-green" id="twilio-status-badge">Connected</span>
             </div>
             <div class="card-body">
-              <div style="font-size:13px;color:var(--text2);margin-bottom:14px;">Send to all patients in a triage category</div>
-              <div class="form-group mb-12">
-                <label class="form-label">Target group</label>
-                <select class="form-input" id="bulk-target">
-                  <option>All patients in queue</option>
-                  <option>Critical only</option>
-                  <option>Wait time &gt; 60 min</option>
-                  <option>Routine — ask to come back later</option>
-                </select>
-              </div>
-              <div class="form-group mb-12">
-                <label class="form-label">Message</label>
-                <textarea class="form-input" id="bulk-msg" placeholder="e.g. Due to high volume today, routine patients may experience waits of 90+ minutes. We apologise for the inconvenience." maxlength="160"></textarea>
-              </div>
-              <button class="btn" onclick="sendBulkSMS()">Send to group</button>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">SMS log — today</div>
-            <span class="badge badge-gray" id="sms-total-badge">18 sent</span>
-          </div>
-          <div class="card-body" id="sms-log"></div>
-        </div>
-      </div>
-
-      <!-- ══ ANALYTICS ══ -->
-      <div class="page" id="page-analytics">
-        <div class="analytics-grid mb-16">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Hourly patient volume</div></div>
-            <div class="card-body">
-              <div class="bar-chart" id="analytics-chart"></div>
-              <div class="bar-labels" id="analytics-labels"></div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Wait time — this week</div></div>
-            <div class="card-body" id="wait-trend-chart"></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Top conditions</div></div>
-            <div class="card-body" id="top-conditions"></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Performance vs targets</div></div>
-            <div class="card-body" id="perf-vs-targets"></div>
-          </div>
-        </div>
-        <div class="three-col">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Department load</div></div>
-            <div class="card-body" id="dept-load"></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Triage accuracy rate</div></div>
-            <div class="card-body">
-              <div style="text-align:center;padding:16px 0;">
-                <div style="font-size:52px;font-weight:300;color:var(--green)">94<span style="font-size:24px">%</span></div>
-                <div style="font-size:12px;color:var(--text3);margin-top:4px;">vs 91% last month</div>
-              </div>
-              <div class="progress-row">
-                <div class="progress-label"><span style="color:var(--text2)">Critical correctly identified</span><span>100%</span></div>
-                <div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--green)"></div></div>
-              </div>
-              <div class="progress-row">
-                <div class="progress-label"><span style="color:var(--text2)">Urgent correctly identified</span><span>96%</span></div>
-                <div class="progress-track"><div class="progress-fill" style="width:96%;background:var(--green)"></div></div>
-              </div>
-              <div class="progress-row">
-                <div class="progress-label"><span style="color:var(--text2)">Routine correctly identified</span><span>88%</span></div>
-                <div class="progress-track"><div class="progress-fill" style="width:88%;background:var(--amber)"></div></div>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Patient satisfaction</div></div>
-            <div class="card-body">
-              <div style="text-align:center;padding:16px 0;">
-                <div style="font-size:52px;font-weight:300;color:var(--accent)">4.1<span style="font-size:24px">/5</span></div>
-                <div style="font-size:12px;color:var(--text3);margin-top:4px;">Based on 47 exit surveys</div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:8px;" id="satisfaction-breakdown"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ══ FACILITY MANAGER ══ -->
-      <div class="page" id="page-facility">
-        <div class="facility-grid mb-16">
-          <div class="card">
-            <div class="card-body big-stat">
-              <div class="num green" id="fm-seen">83</div>
-              <div class="lbl">Patients seen today</div>
-              <div class="change up">↑ 7% vs last week</div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-body big-stat">
-              <div class="num amber">47m</div>
-              <div class="lbl">Average wait time</div>
-              <div class="change up">↓ 15% vs last month</div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-body big-stat">
-              <div class="num">4</div>
-              <div class="lbl">Doctors on duty</div>
-              <div class="change" style="color:var(--text3)">2 more at 14:00</div>
-            </div>
-          </div>
-        </div>
-        <div class="two-col mb-16">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Staff on duty today</div></div>
-            <div class="card-body" id="staff-roster"></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Resource & capacity</div></div>
-            <div class="card-body" id="capacity-panel"></div>
-          </div>
-        </div>
-        <div class="card mb-16">
-          <div class="card-header">
-            <div class="card-title">Weekly throughput report</div>
-            <button class="btn btn-sm" onclick="showToast('Report exported to PDF')">Export PDF</button>
-          </div>
-          <div class="card-body" id="weekly-report"></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">Clinic settings</div></div>
-          <div class="card-body">
-            <div class="form-grid">
-              <div class="form-group">
-                <label class="form-label">Clinic name</label>
-                <input class="form-input" id="setting-clinic" value="Groote Schuur Clinic">
-              </div>
-              <div class="form-group">
-                <label class="form-label">SMS sender name</label>
-                <input class="form-input" value="HealthQueue">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Daily patient target</label>
-                <input class="form-input" type="number" value="100">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Max acceptable wait (min)</label>
-                <input class="form-input" type="number" value="45">
-              </div>
-              <div class="form-group full">
-                <label class="form-label">Operating hours</label>
-                <div class="flex-gap">
-                  <input class="form-input" type="time" value="07:00" style="width:120px;">
-                  <span style="color:var(--text2);">to</span>
-                  <input class="form-input" type="time" value="17:00" style="width:120px;">
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+                  <span style="color:var(--text3);">Account SID</span>
+                  <span style="font-family:'DM Mono',monospace;color:var(--text2);" id="twilio-sid-display">AC3df2f2...004ac</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+                  <span style="color:var(--text3);">WhatsApp from</span>
+                  <span style="font-family:'DM Mono',monospace;color:var(--text2);">+14155238886</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+                  <span style="color:var(--text3);">SMS from</span>
+                  <span style="font-family:'DM Mono',monospace;color:var(--text2);">Twilio sandbox</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;">
+                  <span style="color:var(--text3);">SMS sent today</span>
+                  <span style="font-family:'DM Mono',monospace;color:var(--green);" id="sms-count-display">0</span>
                 </div>
               </div>
+              <div style="margin-top:12px;padding:10px;background:var(--amber-dim);border:1px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);">
+                <div style="font-size:11px;color:var(--amber);font-weight:600;margin-bottom:3px;">⚠ Sandbox mode</div>
+                <div style="font-size:11px;color:var(--text2);">Recipients must join sandbox first. Go to Twilio console → Messaging → Try it out → WhatsApp.</div>
+              </div>
             </div>
-            <div style="margin-top:12px;">
-              <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Message log — live from Supabase</div>
+            <span class="badge badge-gray" id="sms-log-count">0 sent</span>
+          </div>
+          <div class="card-body" id="sms-log-panel">
+            <div style="color:var(--text3);font-size:12px;">No messages yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div class="page" id="page-analytics">
+        <div class="two-col mb-14">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Hourly volume</div></div>
+            <div class="card-body">
+              <div class="bar-wrap" id="hourly-chart"></div>
+              <div class="bar-lbls" id="hourly-labels"></div>
             </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Performance</div></div>
+            <div class="card-body" id="perf-panel"></div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Triage distribution</div></div>
+            <div class="card-body" id="analytics-triage"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Department load</div></div>
+            <div class="card-body" id="analytics-depts"></div>
           </div>
         </div>
       </div>
@@ -968,26 +1186,26 @@ textarea.form-input { resize: vertical; min-height: 72px; }
   </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- ══ PATIENT DETAIL MODAL ══ -->
+<!-- Patient modal -->
 <div class="modal-overlay" id="patient-modal">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="modal-patient-name">Patient Details</h3>
+      <h3 id="modal-name">Patient</h3>
       <button class="btn btn-sm" onclick="closeModal('patient-modal')">✕</button>
     </div>
     <div class="modal-body">
-      <div id="modal-triage-banner" style="padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:13px;font-weight:500;"></div>
-      <div class="detail-grid mb-16" id="modal-details"></div>
-      <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Chief Complaint</div>
-      <div id="modal-complaint" style="font-size:14px;color:var(--text2);margin-bottom:14px;"></div>
-      <div id="modal-vitals" style="display:none;">
-        <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Vitals</div>
-        <div class="detail-grid" id="modal-vitals-data"></div>
+      <div id="modal-triage-bar" style="padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:14px;font-size:12px;font-weight:600;font-family:'Syne',sans-serif;letter-spacing:0.04em;"></div>
+      <div class="detail-grid mb-14" id="modal-details"></div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;font-family:'Syne',sans-serif;">Chief Complaint</div>
+      <div id="modal-complaint" style="font-size:13px;color:var(--text2);margin-bottom:14px;"></div>
+      <div id="modal-vitals-wrap" style="display:none;">
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;font-family:'Syne',sans-serif;">Vitals</div>
+        <div class="detail-grid" id="modal-vitals"></div>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('patient-modal')">Close</button>
-      <button class="btn btn-danger" onclick="removeFromQueue()">Mark as seen</button>
+      <button class="btn btn-danger" onclick="markSeen()">✓ Mark as seen</button>
       <button class="btn btn-primary" onclick="callPatient()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.45 2 2 0 0 1 3.58 1.27h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8 9a16 16 0 0 0 6.29 6.29l.78-.78a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         Call Patient
@@ -997,201 +1215,674 @@ textarea.form-input { resize: vertical; min-height: 72px; }
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="notif-bubble" id="notif-bubble"><div class="notif-title" id="notif-title"></div><div class="notif-msg" id="notif-msg"></div></div>
 
 <script>
-// ══════════════════════════════════════════
-// DATA
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// CONFIG — credentials wired in
+// ═══════════════════════════════════════════════
+const SUPABASE_URL  = 'https://lkjzcliscgelcldwqjnk.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxranpjbGlzY2dlbGNsZHdxam5rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTU0NzksImV4cCI6MjA5NjE5MTQ3OX0.oB76bC9XK2xXKeqoO3VgpSNfnpSTfWf-MoJzYAD3OH0';
+
+// Twilio — used server-side only in production. For demo, we call a Supabase Edge Function.
+const TWILIO_SID    = 'ACc3df2f234da48d46d5365ce1b4e004ac';
+const TWILIO_TOKEN  = 'ac513b98512af26bc989ebf2bc4c3698';
+const TWILIO_FROM   = '+14155238886'; // sandbox WhatsApp
+
+// ═══════════════════════════════════════════════
+// INIT SUPABASE
+// ═══════════════════════════════════════════════
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
 const TRIAGE = {
-  critical: { label:'Critical', dotClass:'critical', badge:'badge-red', color:'var(--red)', bg:'var(--red-bg)', border:'var(--red-border)' },
-  urgent:   { label:'Urgent',   dotClass:'urgent',   badge:'badge-amber', color:'var(--amber)', bg:'var(--amber-bg)', border:'var(--amber-border)' },
-  routine:  { label:'Routine',  dotClass:'routine',  badge:'badge-green', color:'var(--green)', bg:'var(--green-bg)', border:'var(--green-border)' },
-  booked:   { label:'Pre-booked', dotClass:'booked', badge:'badge-blue',  color:'var(--blue)',  bg:'var(--blue-bg)',  border:'var(--blue-border)' },
+  critical: { label:'Critical', dot:'critical', badge:'badge-red',    color:'var(--red)',   bg:'var(--red-dim)',    border:'rgba(248,113,113,0.2)' },
+  urgent:   { label:'Urgent',   dot:'urgent',   badge:'badge-amber',  color:'var(--amber)', bg:'var(--amber-dim)',  border:'rgba(251,191,36,0.2)'  },
+  routine:  { label:'Routine',  dot:'routine',  badge:'badge-green',  color:'var(--green)', bg:'var(--green-dim)',  border:'rgba(74,222,128,0.2)'  },
+  booked:   { label:'Pre-booked',dot:'booked',  badge:'badge-blue',   color:'var(--blue)',  bg:'var(--blue-dim)',   border:'rgba(96,165,250,0.2)'  },
 };
-const PRIORITY = { critical:0, urgent:1, booked:2, routine:3 };
+const PRIO = { critical:0, urgent:1, booked:2, routine:3 };
 
-let patients = [
-  { id:'P001', first:'Nomvula', last:'Dlamini',    age:34, gender:'Female', idNum:'9004120234089', phone:'0721234567', complaint:'Chest pain and shortness of breath, onset 2 hrs ago', triage:'critical', wait:5,  dept:'Emergency', type:'Walk-in',  arrived:'07:45', bp:'160/100', temp:'37.2', pulse:'112', o2:'91', vitals:true },
-  { id:'P002', first:'Sipho',   last:'Mahlangu',   age:67, gender:'Male',   idNum:'5611230456082', phone:'0834567890', complaint:'Hypertension crisis, severe dizziness, blurred vision', triage:'critical', wait:8,  dept:'Emergency', type:'Walk-in',  arrived:'07:52', bp:'190/120',temp:'36.8', pulse:'95',  o2:'95', vitals:true },
-  { id:'P003', first:'Fatima',  last:'Adams',      age:28, gender:'Female', idNum:'9612184567089', phone:'0761234567', complaint:'Severe lower abdominal pain, possible appendicitis', triage:'urgent',   wait:22, dept:'General',   type:'Walk-in',  arrived:'08:10', bp:'110/70', temp:'38.9', pulse:'102', o2:'98', vitals:true },
-  { id:'P004', first:'Thabo',   last:'Nkosi',      age:45, gender:'Male',   idNum:'7903124678082', phone:'0831234567', complaint:'Diabetic foot wound, signs of infection', triage:'urgent',   wait:35, dept:'General',   type:'Follow-up', arrived:'08:25', bp:'130/85', temp:'37.8', pulse:'88',  o2:'97', vitals:true },
-  { id:'P005', first:'Lindiwe', last:'Cele',       age:22, gender:'Female', idNum:'0204034789089', phone:'0791234567', complaint:'High fever (39.8°C), sore throat, difficulty swallowing', triage:'urgent',   wait:41, dept:'General',   type:'Walk-in',  arrived:'08:30', bp:'',       temp:'39.8', pulse:'', o2:'', vitals:false },
-  { id:'P006', first:'Ahmed',   last:'Patel',      age:55, gender:'Male',   idNum:'6908234890082', phone:'0721234568', complaint:'Monthly hypertension medication refill and BP check', triage:'booked',   wait:30, dept:'Chronic',   type:'Pre-booked',arrived:'08:45', bp:'145/92', temp:'',     pulse:'78',  o2:'', vitals:false },
-  { id:'P007', first:'Mary',    last:'van der Berg',age:72,gender:'Female', idNum:'5201290901089', phone:'0831234568', complaint:'Bilateral joint pain, arthritis flare-up, mobility issues', triage:'routine',  wait:58, dept:'General',   type:'Walk-in',  arrived:'08:55', bp:'', temp:'', pulse:'', o2:'', vitals:false },
-  { id:'P008', first:'Bongani', last:'Zulu',       age:31, gender:'Male',   idNum:'9301124012082', phone:'0761234568', complaint:'Lower back pain after lifting injury at work, difficulty walking', triage:'routine',  wait:65, dept:'Ortho',     type:'Walk-in',  arrived:'09:05', bp:'', temp:'', pulse:'', o2:'', vitals:false },
-  { id:'P009', first:'Priya',   last:'Naidoo',     age:19, gender:'Female', idNum:'0508054123089', phone:'0791234568', complaint:'Generalised rash and itching, started 2 days ago, mild fever', triage:'routine',  wait:71, dept:'General',   type:'Walk-in',  arrived:'09:15', bp:'', temp:'37.5', pulse:'', o2:'', vitals:false },
-  { id:'P010', first:'Johannes',last:'Botha',      age:48, gender:'Male',   idNum:'7604124234082', phone:'0721234569', complaint:'6-month diabetic review, blood glucose monitoring',   triage:'booked',   wait:30, dept:'Chronic',   type:'Pre-booked',arrived:'09:00', bp:'128/82', temp:'36.6', pulse:'74',  o2:'99', vitals:true },
-  { id:'P011', first:'Zanele',  last:'Mokoena',    age:26, gender:'Female', idNum:'9811054345089', phone:'0831234569', complaint:'Antenatal visit — 28 weeks pregnant, routine check',   triage:'booked',   wait:28, dept:'Maternal',  type:'Pre-booked',arrived:'09:20', bp:'110/72', temp:'36.9', pulse:'80',  o2:'99', vitals:false },
-  { id:'P012', first:'Calvin',  last:'Petersen',   age:41, gender:'Male',   idNum:'8302124456082', phone:'0761234569', complaint:'Asthma attack, moderate respiratory distress, wheezing', triage:'urgent',   wait:18, dept:'General',   type:'Walk-in',  arrived:'09:25', bp:'',       temp:'',     pulse:'110', o2:'93', vitals:false },
-];
-
-let smsLog = [
-  { time:'07:48', name:'Nomvula Dlamini', phone:'0721234567', msg:'HEALTHQUEUE: You are next. Please report to Emergency reception immediately.', status:'delivered' },
-  { time:'08:12', name:'Sipho Mahlangu',  phone:'0834567890', msg:'HEALTHQUEUE: Your turn is 3 patients away. Please make your way to the clinic.', status:'delivered' },
-  { time:'08:35', name:'Fatima Adams',    phone:'0761234567', msg:'HEALTHQUEUE: Queue update: estimated wait is now 22 minutes. Thank you for your patience.', status:'delivered' },
-  { time:'08:50', name:'Ahmed Patel',     phone:'0721234568', msg:'HEALTHQUEUE: Appointment reminder: your pre-booked appointment is at 09:30 today.', status:'delivered' },
-  { time:'09:01', name:'Thabo Nkosi',     phone:'0831234567', msg:'HEALTHQUEUE: Your turn is 3 patients away. Please make your way to the clinic.', status:'delivered' },
-  { time:'09:22', name:'Zanele Mokoena',  phone:'0831234569', msg:'HEALTHQUEUE: Antenatal appointment confirmed. Nurse will call you at 09:30.', status:'delivered' },
-];
-
-let selectedTriage = '';
+let queue = [];         // live from Supabase
+let smsLog = [];        // live from Supabase
 let activePatient = null;
+let selectedTriageVal = '';
+let smsCount = 0;
 let selectedDoctor = null;
 let nextTicket = 25;
-let smsCount = 18;
+let dbConnected = false;
 
-function sortedPatients(list) {
-  return [...list].sort((a,b) => PRIORITY[a.triage] - PRIORITY[b.triage] || a.wait - b.wait);
+function sorted(list) {
+  return [...list].sort((a,b) => (PRIO[a.triage]??4)-(PRIO[b.triage]??4) || (a.wait_minutes||0)-(b.wait_minutes||0));
 }
 
-// ══════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════
-const pageTitles = {
-  dashboard:'Dashboard', queue:'Live Queue', register:'Register Patient',
-  triage:'Triage', doctor:'Doctor Console', kiosk:'Self-Check-In',
-  display:'TV Display Board', sms:'SMS Notifications', analytics:'Analytics', facility:'Facility Manager'
-};
-
-function nav(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + page + "'")) n.classList.add('active');
-  });
-  document.getElementById('page-title').textContent = pageTitles[page] || page;
-
-  if (page === 'queue') renderQueue();
-  if (page === 'dashboard') renderDashboard();
-  if (page === 'triage') renderTriagePage();
-  if (page === 'doctor') renderDoctorList();
-  if (page === 'display') renderTVBoard();
-  if (page === 'sms') renderSMSPage();
-  if (page === 'analytics') renderAnalytics();
-  if (page === 'facility') renderFacility();
+// ═══════════════════════════════════════════════
+// SUPABASE — setup tables (first run)
+// ═══════════════════════════════════════════════
+async function setupDatabase() {
+  // Try to query the queue_entries table to check if it exists
+  const { data, error } = await db.from('queue_entries').select('id').limit(1);
+  if (error && error.code === '42P01') {
+    // Table doesn't exist — show setup instructions
+    showDBSetupInstructions();
+    return false;
+  }
+  return true;
 }
 
-// ══════════════════════════════════════════
-// DASHBOARD
-// ══════════════════════════════════════════
-function renderDashboard() {
-  const sorted = sortedPatients(patients);
-  const critical = patients.filter(p => p.triage === 'critical');
-  document.getElementById('m-queue').textContent = patients.length;
-  document.getElementById('m-critical').textContent = critical.length;
-  document.getElementById('m-sms').textContent = smsCount;
-
-  const badge = document.getElementById('critical-badge');
-  if (critical.length > 0) { badge.style.display = ''; badge.textContent = critical.length; }
-  else badge.style.display = 'none';
-
-  // Top 5 queue
-  const tbl = document.getElementById('dash-queue-table');
-  tbl.innerHTML = '<thead><tr><th>#</th><th>Patient</th><th>Triage</th><th>Wait</th><th></th></tr></thead><tbody>' +
-    sorted.slice(0,5).map((p,i) => `
-      <tr onclick="openPatient('${p.id}')">
-        <td style="font-family:'DM Mono',monospace;color:var(--text3);font-size:12px;">${String(i+1).padStart(2,'0')}</td>
-        <td><div class="patient-name">${p.first} ${p.last}</div><div class="patient-complaint">${p.complaint}</div></td>
-        <td><span class="badge ${TRIAGE[p.triage].badge}">${TRIAGE[p.triage].label}</span></td>
-        <td><span class="wait-time ${p.wait>60?'over':''}">${p.wait}m</span></td>
-        <td><span class="triage-dot ${TRIAGE[p.triage].dotClass}"></span></td>
-      </tr>`).join('') + '</tbody>';
-
-  // Triage breakdown
-  const counts = { critical:0, urgent:0, routine:0, booked:0 };
-  patients.forEach(p => counts[p.triage]++);
-  const total = patients.length || 1;
-  document.getElementById('triage-breakdown').innerHTML = Object.entries(counts).map(([t, c]) => `
-    <div class="progress-row">
-      <div class="progress-label">
-        <span style="display:flex;align-items:center;gap:6px;"><span class="triage-dot ${TRIAGE[t].dotClass}"></span>${TRIAGE[t].label}</span>
-        <span style="font-weight:500;">${c}</span>
-      </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${Math.round(c/total*100)}%;background:${TRIAGE[t].color};"></div></div>
-    </div>`).join('');
-
-  // Mini bar chart
-  const hours = [3,5,8,14,18,22,17,13,10,8,6,4];
-  const labels = ['7','8','9','10','11','12','1','2','3','4','5','6'];
-  const mx = Math.max(...hours);
-  const chart = document.getElementById('dash-chart');
-  const lbls = document.getElementById('dash-chart-labels');
-  chart.innerHTML = hours.map((h,i) => `<div class="bar" style="height:${Math.round(h/mx*80)}px;background:${h>15?'#c0392b':h>10?'#b7620a':'#185FA5'};opacity:0.75;"></div>`).join('');
-  lbls.innerHTML = labels.map(l => `<div class="bar-lbl">${l}</div>`).join('');
+function showDBSetupInstructions() {
+  document.getElementById('db-status-panel').innerHTML = `
+    <div style="padding:12px;background:var(--amber-dim);border:1px solid rgba(251,191,36,0.2);border-radius:var(--radius-sm);margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--amber);font-weight:600;margin-bottom:6px;">⚠ Database tables not found</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.6;">Run this SQL in your Supabase dashboard → SQL Editor:</div>
+    </div>
+    <pre style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);background:var(--surface3);padding:12px;border-radius:var(--radius-sm);overflow-x:auto;white-space:pre-wrap;line-height:1.6;">${SQL_SCHEMA.trim()}</pre>
+    <button class="btn btn-sm" style="margin-top:8px;" onclick="navigator.clipboard.writeText(SQL_SCHEMA).then(()=>showToast('SQL copied!','success'))">Copy SQL</button>
+    <a href="https://supabase.com/dashboard/project/lkjzcliscgelcldwqjnk/editor" target="_blank" class="btn btn-sm btn-primary" style="margin-top:8px;margin-left:6px;text-decoration:none;">Open SQL Editor ↗</a>
+  `;
 }
 
-// ══════════════════════════════════════════
-// QUEUE
-// ══════════════════════════════════════════
-function renderQueue() {
-  const tf = document.getElementById('queue-filter').value;
-  const df = document.getElementById('dept-filter').value;
-  let list = patients;
-  if (tf !== 'all') list = list.filter(p => p.triage === tf);
-  if (df !== 'all') list = list.filter(p => p.dept === df);
-  const sorted = sortedPatients(list);
+const SQL_SCHEMA = `
+-- HealthQueue schema
+CREATE TABLE IF NOT EXISTS queue_entries (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  ticket       TEXT NOT NULL,
+  first_name   TEXT NOT NULL,
+  last_name    TEXT NOT NULL,
+  phone        TEXT,
+  complaint    TEXT,
+  triage       TEXT NOT NULL DEFAULT 'routine',
+  department   TEXT DEFAULT 'General',
+  visit_type   TEXT DEFAULT 'Walk-in',
+  wait_minutes INTEGER DEFAULT 45,
+  status       TEXT DEFAULT 'waiting',
+  bp           TEXT, temp TEXT, pulse TEXT, o2 TEXT,
+  arrived_at   TIMESTAMPTZ DEFAULT now(),
+  seen_at      TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ DEFAULT now()
+);
 
-  document.getElementById('queue-count').textContent = sorted.length;
-  const cr = patients.filter(p=>p.triage==='critical').length;
-  const ur = patients.filter(p=>p.triage==='urgent').length;
-  document.getElementById('q-critical-count').textContent = cr + ' critical';
-  document.getElementById('q-critical-count').style.display = cr ? '' : 'none';
-  document.getElementById('q-urgent-count').textContent = ur + ' urgent';
-  document.getElementById('q-urgent-count').style.display = ur ? '' : 'none';
+CREATE TABLE IF NOT EXISTS sms_log (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  patient    TEXT,
+  phone      TEXT,
+  message    TEXT,
+  channel    TEXT DEFAULT 'sms',
+  status     TEXT DEFAULT 'sent',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-  const tbl = document.getElementById('full-queue-table');
-  if (!sorted.length) {
-    tbl.innerHTML = '<tbody><tr><td colspan="6" style="padding:32px;text-align:center;color:var(--text3);">No patients match this filter</td></tr></tbody>';
+-- Enable realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE queue_entries;
+ALTER PUBLICATION supabase_realtime ADD TABLE sms_log;
+`;
+
+// ═══════════════════════════════════════════════
+// SUPABASE — fetch queue
+// ═══════════════════════════════════════════════
+async function fetchQueue() {
+  const { data, error } = await db
+    .from('queue_entries')
+    .select('*')
+    .eq('status', 'waiting')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('Queue fetch error:', error);
+    setConnStatus(false);
     return;
   }
-  tbl.innerHTML = '<thead><tr><th>#</th><th>Patient</th><th>Triage</th><th>Dept</th><th>Wait</th><th>Arrived</th><th>Action</th></tr></thead><tbody>' +
-    sorted.map((p,i) => `
+
+  setConnStatus(true);
+  queue = data || [];
+  refreshAllViews();
+}
+
+async function fetchSMSLog() {
+  const { data } = await db
+    .from('sms_log')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(20);
+  smsLog = data || [];
+  smsCount = smsLog.length;
+  renderSMSLog();
+  document.getElementById('sms-count-display').textContent = smsCount;
+  document.getElementById('m-sms').textContent = smsCount;
+}
+
+// ═══════════════════════════════════════════════
+// SUPABASE — realtime subscriptions
+// ═══════════════════════════════════════════════
+function subscribeRealtime() {
+  db.channel('queue-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'queue_entries' }, payload => {
+      console.log('Queue change:', payload.eventType);
+      fetchQueue();
+      if (payload.eventType === 'INSERT') {
+        const p = payload.new;
+        showNotif('New patient registered', `${p.first_name} ${p.last_name} — ${TRIAGE[p.triage]?.label||p.triage}`);
+      }
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'sms_log' }, payload => {
+      fetchSMSLog();
+    })
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        setConnStatus(true);
+        document.getElementById('realtime-status').textContent = 'Live';
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        setConnStatus(false);
+      }
+    });
+}
+
+function setConnStatus(ok) {
+  dbConnected = ok;
+  const el = document.getElementById('conn-status');
+  const banner = document.getElementById('conn-banner');
+  if (ok) {
+    el.textContent = 'connected';
+    banner.classList.remove('show');
+  } else {
+    el.textContent = 'reconnecting...';
+    banner.classList.add('show');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INSERT patient to Supabase
+// ═══════════════════════════════════════════════
+async function insertPatient(p) {
+  const { data, error } = await db.from('queue_entries').insert([p]).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function updatePatientStatus(id, status) {
+  const update = { status };
+  if (status === 'seen') update.seen_at = new Date().toISOString();
+  const { error } = await db.from('queue_entries').update(update).eq('id', id);
+  if (error) throw error;
+}
+
+async function logSMS(patient, phone, message, channel) {
+  await db.from('sms_log').insert([{ patient, phone, message, channel, status: 'sent' }]);
+}
+
+// ═══════════════════════════════════════════════
+// TWILIO — send via fetch (CORS note: in production use Supabase Edge Function)
+// ═══════════════════════════════════════════════
+async function sendTwilioSMS(to, body) {
+  // Format SA number to E.164
+  let phone = to.replace(/\s/g,'');
+  if (phone.startsWith('0')) phone = '+27' + phone.slice(1);
+  if (!phone.startsWith('+')) phone = '+27' + phone;
+
+  try {
+    const params = new URLSearchParams();
+    params.append('To', phone);
+    params.append('From', TWILIO_FROM);
+    params.append('Body', body);
+
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params,
+      }
+    );
+    const data = await res.json();
+    if (data.error_code) throw new Error(data.message);
+    return { ok: true, sid: data.sid };
+  } catch (err) {
+    console.error('Twilio error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+async function sendTwilioWhatsApp(to, body) {
+  let phone = to.replace(/\s/g,'');
+  if (phone.startsWith('0')) phone = '+27' + phone.slice(1);
+  if (!phone.startsWith('+')) phone = '+27' + phone;
+
+  try {
+    const params = new URLSearchParams();
+    params.append('To', 'whatsapp:' + phone);
+    params.append('From', 'whatsapp:' + TWILIO_FROM);
+    params.append('Body', body);
+
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params,
+      }
+    );
+    const data = await res.json();
+    if (data.error_code) throw new Error(data.message);
+    return { ok: true, sid: data.sid };
+  } catch (err) {
+    console.error('WhatsApp error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+// ═══════════════════════════════════════════════
+// AUTO-NOTIFY when patient is 3rd in queue
+// ═══════════════════════════════════════════════
+let notifiedTickets = new Set();
+
+async function checkAndNotify() {
+  const s = sorted(queue);
+  for (let i = 0; i < Math.min(s.length, 5); i++) {
+    const p = s[i];
+    if (i === 2 && p.phone && !notifiedTickets.has(p.ticket)) {
+      notifiedTickets.add(p.ticket);
+      const msg = `HealthQueue: Your turn is 3 patients away. Ticket: ${p.ticket}. Please make your way to the clinic now.`;
+      const channel = document.getElementById('sms-channel')?.value || 'sms';
+      if (channel !== 'whatsapp') await sendTwilioSMS(p.phone, msg);
+      if (channel !== 'sms')      await sendTwilioWhatsApp(p.phone, msg);
+      await logSMS(`${p.first_name} ${p.last_name}`, p.phone, msg, 'auto');
+      showToast(`Auto-notified ${p.first_name} — 3rd in queue`, 'success');
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// RENDER helpers
+// ═══════════════════════════════════════════════
+function refreshAllViews() {
+  const page = document.querySelector('.page.active')?.id;
+  renderDashboard();
+  if (page === 'page-queue')   renderQueue();
+  if (page === 'page-triage')  renderTriagePage();
+  if (page === 'page-doctor')  renderDoctorList();
+  if (page === 'page-display') renderTVBoard();
+  if (page === 'page-analytics') renderAnalytics();
+  checkAndNotify();
+  updateSMSDropdown();
+}
+
+function renderDashboard() {
+  const s = sorted(queue);
+  const critical = queue.filter(p=>p.triage==='critical').length;
+  const avgWait = queue.length ? Math.round(queue.reduce((a,p)=>a+(p.wait_minutes||0),0)/queue.length) : 0;
+
+  document.getElementById('m-queue').textContent = queue.length;
+  document.getElementById('m-critical').textContent = critical;
+  document.getElementById('m-wait').textContent = avgWait || '—';
+  document.getElementById('m-queue-sub').textContent = `${critical} critical`;
+
+  const badge = document.getElementById('critical-nav-badge');
+  badge.style.display = critical > 0 ? '' : 'none';
+  if (critical > 0) badge.textContent = critical;
+
+  // Top 5 table
+  const tbl = document.getElementById('dash-queue-table');
+  if (!s.length) {
+    tbl.innerHTML = '<tbody><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3);font-size:12px;">Queue is empty</td></tr></tbody>';
+  } else {
+    tbl.innerHTML = '<thead><tr><th>#</th><th>Patient</th><th>Triage</th><th>Wait</th><th></th></tr></thead><tbody>' +
+      s.slice(0,5).map((p,i)=>`
+        <tr onclick="openPatient('${p.id}')">
+          <td style="font-family:'DM Mono',monospace;color:var(--text3);font-size:11px;">${String(i+1).padStart(2,'0')}</td>
+          <td><div class="patient-name">${p.first_name} ${p.last_name}</div><div class="patient-sub">${p.complaint||''}</div></td>
+          <td><span class="badge ${TRIAGE[p.triage]?.badge||'badge-gray'}">${TRIAGE[p.triage]?.label||p.triage}</span></td>
+          <td><span class="wait-mono ${(p.wait_minutes||0)>60?'over':''}">${p.wait_minutes||0}m</span></td>
+          <td><span class="triage-dot ${TRIAGE[p.triage]?.dot||''}"></span></td>
+        </tr>`).join('') + '</tbody>';
+  }
+
+  // Triage breakdown
+  const counts = {critical:0,urgent:0,routine:0,booked:0};
+  queue.forEach(p=>{ if(counts[p.triage]!==undefined) counts[p.triage]++; });
+  const total = queue.length||1;
+  document.getElementById('triage-breakdown-panel').innerHTML =
+    Object.entries(counts).map(([t,c])=>`
+      <div class="progress-row">
+        <div class="progress-label">
+          <span style="display:flex;align-items:center;gap:6px;"><span class="triage-dot ${TRIAGE[t].dot}"></span>${TRIAGE[t].label}</span>
+          <span style="font-family:'DM Mono',monospace;">${c}</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.round(c/total*100)}%;background:${TRIAGE[t].color};"></div></div>
+      </div>`).join('');
+
+  // DB status
+  document.getElementById('db-status-panel').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text3);">Supabase</span>
+        <span style="color:${dbConnected?'var(--green)':'var(--red)'};">${dbConnected?'● Connected':'● Disconnected'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text3);">Realtime</span>
+        <span style="color:var(--green);">● Active</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text3);">Project</span>
+        <span style="font-family:'DM Mono',monospace;color:var(--text2);">lkjzcliscgelcldwqjnk</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text3);">Twilio</span>
+        <span style="color:var(--green);">● Sandbox</span>
+      </div>
+    </div>`;
+}
+
+function renderQueue() {
+  const tf = document.getElementById('q-filter-triage').value;
+  const df = document.getElementById('q-filter-dept').value;
+  let list = queue;
+  if (tf !== 'all') list = list.filter(p=>p.triage===tf);
+  if (df !== 'all') list = list.filter(p=>p.department===df);
+  const s = sorted(list);
+
+  document.getElementById('q-count').textContent = s.length;
+
+  const cr = queue.filter(p=>p.triage==='critical').length;
+  const ur = queue.filter(p=>p.triage==='urgent').length;
+  document.getElementById('q-badges').innerHTML =
+    (cr?`<span class="badge badge-red">${cr} critical</span>`:'')+
+    (ur?`<span class="badge badge-amber">${ur} urgent</span>`:'');
+
+  const tbl = document.getElementById('full-queue-table');
+  if (!s.length) {
+    tbl.innerHTML = '<tbody><tr><td colspan="7" style="padding:32px;text-align:center;color:var(--text3);font-size:12px;">No patients match this filter</td></tr></tbody>';
+    return;
+  }
+  tbl.innerHTML = '<thead><tr><th>Ticket</th><th>Patient</th><th>Triage</th><th>Dept</th><th>Wait</th><th>Arrived</th><th>Action</th></tr></thead><tbody>' +
+    s.map(p=>`
       <tr onclick="openPatient('${p.id}')">
-        <td style="font-family:'DM Mono',monospace;color:var(--text3);">${p.id}</td>
-        <td><div class="patient-name">${p.first} ${p.last}</div><div class="patient-complaint">${p.complaint}</div></td>
-        <td><span class="badge ${TRIAGE[p.triage].badge}">${TRIAGE[p.triage].label}</span></td>
-        <td><span class="badge badge-gray">${p.dept}</span></td>
-        <td><span class="wait-time ${p.wait>60?'over':''}">${p.wait}m</span></td>
-        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);">${p.arrived}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">${p.ticket}</td>
+        <td><div class="patient-name">${p.first_name} ${p.last_name}</div><div class="patient-sub">${p.complaint||''}</div></td>
+        <td><span class="badge ${TRIAGE[p.triage]?.badge||'badge-gray'}">${TRIAGE[p.triage]?.label||p.triage}</span></td>
+        <td><span class="badge badge-gray">${p.department||'General'}</span></td>
+        <td><span class="wait-mono ${(p.wait_minutes||0)>60?'over':''}">${p.wait_minutes||0}m</span></td>
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">${p.arrived_at?new Date(p.arrived_at).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):''}</td>
         <td onclick="event.stopPropagation()">
           <button class="btn btn-sm btn-primary" onclick="callPatientById('${p.id}')">Call</button>
         </td>
       </tr>`).join('') + '</tbody>';
 }
 
-// ══════════════════════════════════════════
+function renderTriagePage() {
+  document.getElementById('triage-pending').textContent = queue.length + ' in queue';
+  const tbl = document.getElementById('triage-table');
+  if (!queue.length) {
+    tbl.innerHTML = '<tbody><tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text3);">Queue is empty</td></tr></tbody>';
+    return;
+  }
+  tbl.innerHTML = '<thead><tr><th>Ticket</th><th>Patient</th><th>Complaint</th><th>Triage</th><th>Update</th></tr></thead><tbody>' +
+    sorted(queue).map(p=>`
+      <tr onclick="openPatient('${p.id}')">
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);">${p.ticket}</td>
+        <td><div class="patient-name">${p.first_name} ${p.last_name}</div></td>
+        <td><div class="patient-sub" style="max-width:180px;">${p.complaint||''}</div></td>
+        <td><span class="badge ${TRIAGE[p.triage]?.badge||'badge-gray'}">${TRIAGE[p.triage]?.label||p.triage}</span></td>
+        <td onclick="event.stopPropagation()">
+          <select class="form-input" style="font-size:11px;padding:3px 7px;" onchange="retragePatient('${p.id}',this.value)">
+            ${Object.keys(TRIAGE).map(t=>`<option value="${t}" ${t===p.triage?'selected':''}>${TRIAGE[t].label}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`).join('') + '</tbody>';
+}
+
+async function retragePatient(id, newTriage) {
+  const { error } = await db.from('queue_entries').update({ triage: newTriage }).eq('id', id);
+  if (!error) showToast('Triage updated', 'success');
+}
+
+function renderDoctorList() {
+  const s = sorted(queue).slice(0,8);
+  document.getElementById('doctor-list').innerHTML = s.map(p=>`
+    <div style="background:${selectedDoctor===p.id?'var(--surface3)':'var(--surface2)'};border:1px solid ${selectedDoctor===p.id?'rgba(74,222,128,0.3)':'var(--border)'};border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all 0.12s;"
+      onclick="selectConsult('${p.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="font-weight:600;font-size:13px;">${p.first_name} ${p.last_name}</div>
+        <span class="badge ${TRIAGE[p.triage]?.badge||'badge-gray'}" style="font-size:9px;">${TRIAGE[p.triage]?.label||p.triage}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">${p.complaint||''}</div>
+      <div style="display:flex;gap:6px;margin-top:7px;">
+        <span class="badge badge-gray" style="font-size:9px;">${p.department||'General'}</span>
+        <span style="font-size:10px;color:var(--text3);">${p.wait_minutes||0}m wait</span>
+      </div>
+    </div>`).join('');
+}
+
+function selectConsult(id) {
+  selectedDoctor = id;
+  renderDoctorList();
+  const p = queue.find(x=>x.id===id);
+  if (!p) return;
+  document.getElementById('consult-panel').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">${p.first_name} ${p.last_name} — ${p.ticket}</div>
+        <span class="badge ${TRIAGE[p.triage]?.badge||'badge-gray'}">${TRIAGE[p.triage]?.label||p.triage}</span>
+      </div>
+      <div class="card-body">
+        <div class="detail-grid mb-14">
+          ${[{k:'Department',v:p.department||'—'},{k:'Visit type',v:p.visit_type||'—'},{k:'Arrived',v:p.arrived_at?new Date(p.arrived_at).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):''},{k:'Phone',v:p.phone||'—'}].map(d=>`<div class="detail-item"><div class="key">${d.k}</div><div class="val">${d.v}</div></div>`).join('')}
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;font-family:'Syne',sans-serif;">Chief Complaint</div>
+          <div style="font-size:13px;color:var(--text2);">${p.complaint||'—'}</div>
+        </div>
+        ${(p.bp||p.temp||p.pulse||p.o2)?`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
+          ${[p.bp&&{k:'BP',v:p.bp},p.temp&&{k:'Temp',v:p.temp+'°C'},p.pulse&&{k:'Pulse',v:p.pulse+' bpm'},p.o2&&{k:'O₂',v:p.o2+'%'}].filter(Boolean).map(d=>`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:8px;text-align:center;border:1px solid var(--border);"><div style="font-size:10px;color:var(--text3);">${d.k}</div><div style="font-size:15px;font-weight:600;margin-top:2px;">${d.v}</div></div>`).join('')}
+        </div>`:''}
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;font-family:'Syne',sans-serif;">Clinical notes</div>
+          <textarea class="form-input" placeholder="Enter notes, findings, diagnosis..." style="min-height:80px;width:100%;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" onclick="showToast('Referral noted')">Refer</button>
+          <button class="btn" onclick="showToast('Rx printed')">Print Rx</button>
+          <button class="btn btn-primary" onclick="completeConsult('${p.id}','${p.first_name} ${p.last_name}')">Complete &amp; Discharge</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function completeConsult(id, name) {
+  await updatePatientStatus(id, 'seen');
+  selectedDoctor = null;
+  document.getElementById('consult-panel').innerHTML = `<div class="card"><div class="card-body" style="display:flex;align-items:center;justify-content:center;height:280px;flex-direction:column;gap:8px;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div style="color:var(--text3);font-size:13px;">Select a patient to begin</div></div></div>`;
+  showToast(`✓ ${name} discharged`, 'success');
+  document.getElementById('m-seen').textContent = parseInt(document.getElementById('m-seen').textContent||0)+1;
+}
+
+function renderTVBoard() {
+  const s = sorted(queue);
+  const now = s[0];
+  const next = s.slice(1,6);
+  const tvColors = { critical:'#f87171', urgent:'#fbbf24', routine:'#4ade80', booked:'#60a5fa' };
+
+  document.getElementById('tv-now-section').innerHTML = `
+    <div class="tv-section-lbl">Now calling</div>
+    ${now?`<div class="tv-now-card">
+      <div class="tv-now-ticket">${now.ticket}</div>
+      <div>
+        <div class="tv-now-name">${now.first_name} ${now.last_name}</div>
+        <div class="tv-now-dept">${now.department||'General'}</div>
+      </div>
+      <div style="margin-left:auto;width:14px;height:14px;border-radius:50%;background:${tvColors[now.triage]||'#4ade80'};box-shadow:0 0 14px ${tvColors[now.triage]||'#4ade80'}66;"></div>
+    </div>`:'<div style="color:rgba(255,255,255,0.3);font-size:13px;">Queue is empty</div>'}`;
+
+  document.getElementById('tv-next-section').innerHTML = `
+    <div class="tv-section-lbl">Next up</div>
+    ${next.map(p=>`<div class="tv-row">
+      <div class="tv-ticket">${p.ticket}</div>
+      <div class="tv-name">${p.first_name} ${p.last_name.charAt(0)}.</div>
+      <div class="tv-dept">${p.department||'General'}</div>
+      <div class="tv-dot" style="background:${tvColors[p.triage]||'#4ade80'};"></div>
+    </div>`).join('')}`;
+}
+
+function openTVFullscreen() {
+  const s = sorted(queue);
+  const tvColors = { critical:'#f87171', urgent:'#fbbf24', routine:'#4ade80', booked:'#60a5fa' };
+  const now = s[0];
+  const next = s.slice(1,8);
+  const w = window.open('','_blank','width=1280,height=720');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HealthQueue Display</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#050a10;font-family:'Syne',sans-serif;color:white;height:100vh;display:flex;flex-direction:column;}
+  .hdr{background:#081018;padding:18px 40px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.07);}
+  .logo{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;}
+  .dot{width:8px;height:8px;background:#4ade80;border-radius:50%;animation:p 2s ease-in-out infinite;}
+  @keyframes p{0%,100%{opacity:1}50%{opacity:.4}}
+  .clk{font-family:'DM Mono',monospace;font-size:24px;color:rgba(255,255,255,0.4);}
+  .now{padding:24px 40px;background:rgba(74,222,128,0.04);border-bottom:1px solid rgba(255,255,255,0.05);}
+  .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:10px;}
+  .now-card{display:flex;align-items:center;gap:20px;background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15);border-radius:12px;padding:18px 24px;}
+  .ticket{font-family:'DM Mono',monospace;font-size:48px;font-weight:400;min-width:130px;}
+  .pname{font-size:28px;font-weight:700;}
+  .pdept{font-size:16px;color:rgba(255,255,255,.4);margin-top:5px;}
+  .next{flex:1;padding:16px 40px;}
+  .row{display:flex;align-items:center;gap:16px;padding:10px 16px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:6px;border:1px solid rgba(255,255,255,.05);}
+  .r-ticket{font-family:'DM Mono',monospace;font-size:20px;min-width:90px;}
+  .r-name{font-size:17px;flex:1;}
+  .r-dept{font-size:13px;color:rgba(255,255,255,.3);}
+  .d{width:12px;height:12px;border-radius:50%;}
+  .ftr{padding:12px 40px;border-top:1px solid rgba(255,255,255,.05);display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.25);}
+  </style></head><body>
+  <div class="hdr"><div class="logo"><span class="dot"></span>HealthQueue</div><div class="clk" id="c">--:--</div></div>
+  ${now?`<div class="now"><div class="lbl">Now calling</div><div class="now-card"><div class="ticket" style="color:#4ade80;">${now.ticket}</div><div><div class="pname">${now.first_name} ${now.last_name}</div><div class="pdept">${now.department||'General'}</div></div><div style="margin-left:auto;width:16px;height:16px;border-radius:50%;background:${tvColors[now.triage]||'#4ade80'};box-shadow:0 0 18px ${tvColors[now.triage]||'#4ade80'}88;"></div></div></div>`:''}
+  <div class="next"><div class="lbl">Next up</div>${next.map(p=>`<div class="row"><div class="r-ticket">${p.ticket}</div><div class="r-name">${p.first_name} ${p.last_name}</div><div class="r-dept">${p.department||'General'}</div><div class="d" style="background:${tvColors[p.triage]||'#4ade80'};"></div></div>`).join('')}</div>
+  <div class="ftr"><span>Please wait to be called. SMS QUEUE to 31234 for your number.</span><span>Powered by HealthQueue + Supabase</span></div>
+  <script>setInterval(()=>{const n=new Date();document.getElementById('c').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');},1000);<\/script>
+  </body></html>`);
+}
+
+// ═══════════════════════════════════════════════
+// REGISTER PATIENT
+// ═══════════════════════════════════════════════
+async function registerPatient() {
+  const first = document.getElementById('reg-first').value.trim();
+  const last  = document.getElementById('reg-last').value.trim();
+  const comp  = document.getElementById('reg-complaint').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  if (!first||!last) { showToast('⚠ Enter patient name'); return; }
+  if (!comp)         { showToast('⚠ Enter chief complaint'); return; }
+  if (!selectedTriageVal) { showToast('⚠ Select triage category'); return; }
+
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const waitMap = { critical:5, urgent:25, booked:30, routine:65 };
+  const ticket = 'P' + String(nextTicket++).padStart(3,'0');
+
+  const entry = {
+    ticket,
+    first_name: first,
+    last_name: last,
+    phone,
+    complaint: comp,
+    triage: selectedTriageVal,
+    department: document.getElementById('reg-dept').value,
+    visit_type: document.getElementById('reg-type').value,
+    wait_minutes: waitMap[selectedTriageVal],
+    status: 'waiting',
+    bp:   document.getElementById('reg-bp').value.trim()||null,
+    temp: document.getElementById('reg-temp').value.trim()||null,
+    pulse:document.getElementById('reg-pulse').value.trim()||null,
+    o2:   document.getElementById('reg-o2').value.trim()||null,
+  };
+
+  try {
+    await insertPatient(entry);
+
+    // Send SMS / WhatsApp
+    if (phone) {
+      const msgs = {
+        critical: `HealthQueue: You are CRITICAL. Ticket: ${ticket}. Please stay at Emergency reception. Do not leave.`,
+        urgent:   `HealthQueue: Registered. Ticket: ${ticket}. Est. wait ~25 min. You'll receive an SMS when 3 patients away.`,
+        routine:  `HealthQueue: Registered. Ticket: ${ticket}. Est. wait ~65 min. You may wait nearby — we'll SMS you when close.`,
+        booked:   `HealthQueue: Appointment confirmed. Ticket: ${ticket}. Est. wait ~30 min. Thank you.`,
+      };
+      const msg = msgs[selectedTriageVal];
+      const sendSMS = document.getElementById('send-sms-on-reg').checked;
+      const sendWA  = document.getElementById('send-wa-on-reg').checked;
+
+      const results = [];
+      if (sendSMS) results.push(sendTwilioSMS(phone, msg));
+      if (sendWA)  results.push(sendTwilioWhatsApp(phone, msg));
+      await Promise.all(results);
+      await logSMS(`${first} ${last}`, phone, msg, sendWA?'whatsapp':'sms');
+    }
+
+    showToast(`✓ ${first} ${last} added — Ticket ${ticket}`, 'success');
+    clearRegForm();
+    nav('queue');
+  } catch (err) {
+    console.error(err);
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg> Register &amp; Add to Queue';
+  }
+}
+
+function clearRegForm() {
+  ['reg-first','reg-last','reg-id','reg-phone','reg-complaint','reg-bp','reg-temp','reg-pulse','reg-o2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('reg-dob').value='';
+  document.getElementById('reg-gender').value='';
+  selectedTriageVal='';
+  ['critical','urgent','routine','booked'].forEach(t=>document.getElementById('tc-'+t).className='triage-card');
+}
+
+function selectTriage(t) {
+  selectedTriageVal = t;
+  ['critical','urgent','routine','booked'].forEach(x=>{
+    document.getElementById('tc-'+x).className='triage-card'+(x===t?' sel-'+x:'');
+  });
+}
+
+// ═══════════════════════════════════════════════
 // PATIENT MODAL
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function openPatient(id) {
-  const p = patients.find(x => x.id === id);
+  const p = queue.find(x=>x.id===id);
   if (!p) return;
   activePatient = p;
-  const tc = TRIAGE[p.triage];
-  document.getElementById('modal-patient-name').textContent = p.first + ' ' + p.last;
-  document.getElementById('modal-triage-banner').style.cssText = `background:${tc.bg};border:1px solid ${tc.border};color:${tc.color};padding:8px 12px;border-radius:6px;margin-bottom:16px;font-size:13px;font-weight:600;`;
-  document.getElementById('modal-triage-banner').textContent = '⬤  ' + tc.label + ' — ' + (p.triage==='critical'?'Immediate attention required':p.triage==='urgent'?'Needs care within 30 minutes':p.triage==='booked'?'Pre-booked appointment':'Routine visit');
-  document.getElementById('modal-complaint').textContent = p.complaint;
+  const tc = TRIAGE[p.triage]||TRIAGE.routine;
+  document.getElementById('modal-name').textContent = `${p.first_name} ${p.last_name}`;
+  document.getElementById('modal-triage-bar').style.cssText = `background:${tc.bg};border:1px solid ${tc.border};color:${tc.color};padding:8px 12px;border-radius:6px;margin-bottom:14px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;`;
+  document.getElementById('modal-triage-bar').textContent = '⬤  ' + tc.label + (p.triage==='critical'?' — Immediate attention required':p.triage==='urgent'?' — Needs care within 30 minutes':'');
+  document.getElementById('modal-complaint').textContent = p.complaint||'—';
   document.getElementById('modal-details').innerHTML = [
-    { key:'Ticket', val: p.id },
-    { key:'Age / Gender', val: p.age + ' · ' + p.gender },
-    { key:'Phone', val: p.phone || '—' },
-    { key:'Arrived', val: p.arrived },
-    { key:'Department', val: p.dept },
-    { key:'Visit type', val: p.type },
-    { key:'Est. wait', val: p.wait + ' min' },
-  ].map(d => `<div class="detail-item"><div class="key">${d.key}</div><div class="val">${d.val}</div></div>`).join('');
+    {k:'Ticket',v:p.ticket},
+    {k:'Department',v:p.department||'General'},
+    {k:'Phone',v:p.phone||'—'},
+    {k:'Visit type',v:p.visit_type||'Walk-in'},
+    {k:'Arrived',v:p.arrived_at?new Date(p.arrived_at).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):'—'},
+    {k:'Est. wait',v:(p.wait_minutes||0)+' min'},
+  ].map(d=>`<div class="detail-item"><div class="key">${d.k}</div><div class="val">${d.v}</div></div>`).join('');
 
-  if (p.vitals && (p.bp || p.temp || p.pulse || p.o2)) {
-    document.getElementById('modal-vitals').style.display = '';
-    document.getElementById('modal-vitals-data').innerHTML = [
-      p.bp    && { key:'Blood Pressure', val: p.bp + ' mmHg' },
-      p.temp  && { key:'Temperature',    val: p.temp + ' °C' },
-      p.pulse && { key:'Pulse',          val: p.pulse + ' bpm' },
-      p.o2    && { key:'O₂ Saturation',  val: p.o2 + '%' },
-    ].filter(Boolean).map(d => `<div class="detail-item"><div class="key">${d.key}</div><div class="val">${d.val}</div></div>`).join('');
+  if (p.bp||p.temp||p.pulse||p.o2) {
+    document.getElementById('modal-vitals-wrap').style.display='';
+    document.getElementById('modal-vitals').innerHTML = [
+      p.bp&&{k:'Blood Pressure',v:p.bp+' mmHg'},
+      p.temp&&{k:'Temperature',v:p.temp+'°C'},
+      p.pulse&&{k:'Pulse',v:p.pulse+' bpm'},
+      p.o2&&{k:'O₂ Sat',v:p.o2+'%'},
+    ].filter(Boolean).map(d=>`<div class="detail-item"><div class="key">${d.k}</div><div class="val">${d.v}</div></div>`).join('');
   } else {
-    document.getElementById('modal-vitals').style.display = 'none';
+    document.getElementById('modal-vitals-wrap').style.display='none';
   }
   document.getElementById('patient-modal').classList.add('open');
 }
@@ -1200,552 +1891,269 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 
 function callPatient() {
   if (!activePatient) return;
-  showToast(`📢 Calling ${activePatient.first} ${activePatient.last} — Ticket ${activePatient.id}`);
+  showToast(`📢 Calling ${activePatient.first_name} ${activePatient.last_name} — ${activePatient.ticket}`);
   closeModal('patient-modal');
 }
 
 function callPatientById(id) {
-  const p = patients.find(x=>x.id===id);
-  if (p) showToast(`📢 Calling ${p.first} ${p.last} — Ticket ${p.id}`);
+  const p = queue.find(x=>x.id===id);
+  if (p) showToast(`📢 Calling ${p.first_name} ${p.last_name} — ${p.ticket}`);
 }
 
-function removeFromQueue() {
+async function markSeen() {
   if (!activePatient) return;
-  patients = patients.filter(p => p.id !== activePatient.id);
-  const seen = parseInt(document.getElementById('m-seen').textContent) + 1;
-  document.getElementById('m-seen').textContent = seen;
-  showToast(`✓ ${activePatient.first} ${activePatient.last} marked as seen`);
-  closeModal('patient-modal');
-  renderQueue();
-  renderDashboard();
+  try {
+    await updatePatientStatus(activePatient.id, 'seen');
+    showToast(`✓ ${activePatient.first_name} ${activePatient.last_name} marked as seen`, 'success');
+    closeModal('patient-modal');
+    document.getElementById('m-seen').textContent = parseInt(document.getElementById('m-seen').textContent||0)+1;
+  } catch(e) { showToast('Error: '+e.message, 'error'); }
 }
 
-// ══════════════════════════════════════════
-// REGISTER
-// ══════════════════════════════════════════
-let selectedTriageVal = '';
+// ═══════════════════════════════════════════════
+// KIOSK
+// ═══════════════════════════════════════════════
+async function kioskCheckin() {
+  const name = document.getElementById('kiosk-name').value.trim();
+  const phone = document.getElementById('kiosk-phone').value.trim();
+  const reason = document.getElementById('kiosk-reason').value;
+  if (!name||!reason) { showToast('⚠ Enter name and reason'); return; }
 
-function selectTriage(t) {
-  selectedTriageVal = t;
-  ['critical','urgent','routine','booked'].forEach(x => {
-    document.getElementById('tc-' + x).className = 'triage-card' + (x === t ? ' sel-' + x : '');
-  });
+  const triage = reason.includes('Emergency')?'critical':reason.includes('medication')||reason.includes('results')||reason.includes('Follow')?'booked':'routine';
+  const waitMap = { critical:10, urgent:25, booked:25, routine:60 };
+  const ticket = 'P'+String(nextTicket++).padStart(3,'0');
+  const [first,...rest] = name.trim().split(' ');
+
+  try {
+    await insertPatient({
+      ticket, first_name:first||name, last_name:rest.join(' ')||'(kiosk)',
+      phone, complaint:reason, triage, department:'General',
+      visit_type:'Walk-in', wait_minutes:waitMap[triage], status:'waiting'
+    });
+
+    if (phone) {
+      const msg = `HealthQueue: Checked in! Ticket: ${ticket}. Est. wait: ~${waitMap[triage]} min. We'll SMS you when your turn is near.`;
+      await sendTwilioSMS(phone, msg);
+      await logSMS(name, phone, msg, 'sms');
+    }
+
+    document.getElementById('kiosk-ticket').textContent = ticket;
+    document.getElementById('kiosk-wait-msg').textContent = `Estimated wait: ~${waitMap[triage]} minutes`;
+    document.getElementById('kiosk-result').style.display = '';
+    document.getElementById('kiosk-name').value='';
+    document.getElementById('kiosk-phone').value='';
+    document.getElementById('kiosk-reason').value='';
+    showToast(`✓ Checked in — Ticket ${ticket}`, 'success');
+  } catch(e) { showToast('Error: '+e.message, 'error'); }
 }
 
-function clearRegForm() {
-  ['reg-first','reg-last','reg-id','reg-phone','reg-complaint','reg-bp','reg-temp','reg-pulse','reg-o2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('reg-dob').value = '';
-  document.getElementById('reg-gender').value = '';
-  document.getElementById('reg-dept').value = 'General';
-  document.getElementById('reg-type').value = 'Walk-in';
-  selectedTriageVal = '';
-  ['critical','urgent','routine','booked'].forEach(x => document.getElementById('tc-'+x).className = 'triage-card');
-}
-
-function registerPatient() {
-  const first = document.getElementById('reg-first').value.trim();
-  const last = document.getElementById('reg-last').value.trim();
-  const complaint = document.getElementById('reg-complaint').value.trim();
-  if (!first || !last) { showToast('⚠ Please enter the patient name'); return; }
-  if (!complaint) { showToast('⚠ Please enter the chief complaint'); return; }
-  if (!selectedTriageVal) { showToast('⚠ Please select a triage category'); return; }
-
-  const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  const ticket = 'P' + String(nextTicket++).padStart(3,'0');
-  const waitBase = { critical:5, urgent:25, booked:30, routine:65 };
-  const phone = document.getElementById('reg-phone').value.trim();
-  const bp = document.getElementById('reg-bp').value.trim();
-  const temp = document.getElementById('reg-temp').value.trim();
-  const pulse = document.getElementById('reg-pulse').value.trim();
-  const o2 = document.getElementById('reg-o2').value.trim();
-
-  const newP = {
-    id: ticket,
-    first, last,
-    age: 0,
-    gender: document.getElementById('reg-gender').value || 'Unknown',
-    idNum: document.getElementById('reg-id').value.trim() || '—',
-    phone: phone || '—',
-    complaint,
-    triage: selectedTriageVal,
-    wait: waitBase[selectedTriageVal],
-    dept: document.getElementById('reg-dept').value,
-    type: document.getElementById('reg-type').value,
-    arrived: timeStr,
-    bp, temp, pulse, o2,
-    vitals: !!(bp || temp || pulse || o2),
-  };
-  patients.unshift(newP);
-
-  if (phone) {
-    const msgs = {
-      critical: `HEALTHQUEUE: You have been registered as CRITICAL. Please stay at Emergency reception. Ticket: ${ticket}.`,
-      urgent: `HEALTHQUEUE: Registered. Ticket: ${ticket}. Est. wait ~25 min. You'll get an SMS when 3 patients away.`,
-      routine: `HEALTHQUEUE: Registered. Ticket: ${ticket}. Est. wait ~65 min. You may wait nearby. SMS alert coming.`,
-      booked: `HEALTHQUEUE: Appointment confirmed. Ticket: ${ticket}. Wait time ~30 min. Thank you.`,
-    };
-    smsLog.unshift({ time: timeStr, name: `${first} ${last}`, phone, msg: msgs[selectedTriageVal], status:'delivered' });
-    smsCount++;
-  }
-
-  showToast(`✓ ${first} ${last} added — Ticket ${ticket}`);
-  clearRegForm();
-  nav('queue');
-}
-
-// ══════════════════════════════════════════
-// TRIAGE PAGE
-// ══════════════════════════════════════════
-function renderTriagePage() {
-  const pending = patients.filter(p => !p.triaged);
-  document.getElementById('triage-waiting-count').textContent = pending.length + ' pending';
-  const tbl = document.getElementById('triage-table');
-  const list = sortedPatients(patients).slice(0, 8);
-  tbl.innerHTML = '<thead><tr><th>Ticket</th><th>Patient</th><th>Complaint</th><th>Triage</th><th>Re-triage</th></tr></thead><tbody>' +
-    list.map(p => `
-      <tr onclick="openPatient('${p.id}')">
-        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3);">${p.id}</td>
-        <td><div class="patient-name">${p.first} ${p.last}</div></td>
-        <td><div class="patient-complaint" style="max-width:200px;">${p.complaint}</div></td>
-        <td><span class="badge ${TRIAGE[p.triage].badge}">${TRIAGE[p.triage].label}</span></td>
-        <td onclick="event.stopPropagation()">
-          <select class="form-input" style="font-size:12px;padding:4px 8px;" onchange="retriage('${p.id}',this.value)">
-            <option value="${p.triage}" selected>${TRIAGE[p.triage].label}</option>
-            ${Object.keys(TRIAGE).filter(t=>t!==p.triage).map(t=>`<option value="${t}">${TRIAGE[t].label}</option>`).join('')}
-          </select>
-        </td>
-      </tr>`).join('') + '</tbody>';
-}
-
-function retriage(id, newTriage) {
-  const p = patients.find(x => x.id === id);
-  if (p) {
-    const old = p.triage;
-    p.triage = newTriage;
-    showToast(`${p.first} ${p.last} re-triaged: ${TRIAGE[old].label} → ${TRIAGE[newTriage].label}`);
-    renderTriagePage();
-  }
-}
-
-// ══════════════════════════════════════════
-// DOCTOR CONSOLE
-// ══════════════════════════════════════════
-function renderDoctorList() {
-  const myPatients = sortedPatients(patients).slice(0,6);
-  document.getElementById('doctor-list').innerHTML = myPatients.map(p => `
-    <div class="consult-card ${selectedDoctor===p.id?'selected':''}" onclick="selectConsult('${p.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div class="c-name">${p.first} ${p.last}</div>
-        <span class="badge ${TRIAGE[p.triage].badge}" style="font-size:10px;">${TRIAGE[p.triage].label}</span>
-      </div>
-      <div class="c-complaint">${p.complaint}</div>
-      <div class="c-meta">
-        <span class="badge badge-gray" style="font-size:10px;">${p.dept}</span>
-        <span style="font-size:11px;color:var(--text3);">${p.wait}m wait</span>
-      </div>
-    </div>`).join('');
-}
-
-function selectConsult(id) {
-  selectedDoctor = id;
-  renderDoctorList();
-  const p = patients.find(x=>x.id===id);
-  if (!p) return;
-  document.getElementById('consult-panel').innerHTML = `
-    <div class="card" style="height:100%;">
-      <div class="card-header">
-        <div class="card-title">${p.first} ${p.last} — ${p.id}</div>
-        <span class="badge ${TRIAGE[p.triage].badge}">${TRIAGE[p.triage].label}</span>
-      </div>
-      <div class="card-body">
-        <div class="detail-grid mb-16">
-          ${[{k:'Age',v:p.age||'—'},{k:'Gender',v:p.gender},{k:'Dept',v:p.dept},{k:'Arrived',v:p.arrived}].map(d=>`<div class="detail-item"><div class="key">${d.k}</div><div class="val">${d.v}</div></div>`).join('')}
-        </div>
-        <div style="margin-bottom:14px;">
-          <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Chief Complaint</div>
-          <div style="font-size:14px;">${p.complaint}</div>
-        </div>
-        ${p.vitals?`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
-          ${[p.bp&&{k:'BP',v:p.bp+' mmHg'},p.temp&&{k:'Temp',v:p.temp+'°C'},p.pulse&&{k:'Pulse',v:p.pulse+' bpm'},p.o2&&{k:'O₂',v:p.o2+'%'}].filter(Boolean).map(d=>`<div style="background:var(--surface2);border-radius:6px;padding:8px;text-align:center;"><div style="font-size:11px;color:var(--text3);">${d.k}</div><div style="font-size:16px;font-weight:500;margin-top:2px;">${d.v}</div></div>`).join('')}
-        </div>`:''}
-        <div style="margin-bottom:14px;">
-          <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Clinical notes</div>
-          <textarea class="form-input notes-area" placeholder="Enter clinical notes, findings, diagnosis..."></textarea>
-        </div>
-        <div style="margin-bottom:14px;">
-          <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Prescriptions / Actions</div>
-          <div id="prescriptions"></div>
-          <div class="prescription-row">
-            <input class="form-input" style="flex:1;" placeholder="Medicine / procedure / referral...">
-            <input class="form-input" style="width:100px;" placeholder="Dosage">
-            <button class="btn btn-sm btn-primary" onclick="addRx(this)">Add</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn" onclick="showToast('Patient referred to specialist')">Refer</button>
-          <button class="btn" onclick="showToast('Prescription printed')">Print Rx</button>
-          <button class="btn btn-primary" onclick="completeConsult('${p.id}')">Complete &amp; Discharge</button>
-        </div>
-      </div>
-    </div>`;
-}
-
-function addRx(btn) {
-  const row = btn.closest('.prescription-row');
-  const inputs = row.querySelectorAll('input');
-  const med = inputs[0].value.trim();
-  const dose = inputs[1].value.trim();
-  if (!med) return;
-  const rxDiv = document.getElementById('prescriptions');
-  const item = document.createElement('div');
-  item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:6px;margin-bottom:6px;font-size:13px;';
-  item.innerHTML = `<span style="flex:1;">${med}${dose?' — '+dose:''}</span><button class="btn btn-sm btn-danger" onclick="this.parentElement.remove()" style="padding:2px 8px;">✕</button>`;
-  rxDiv.appendChild(item);
-  inputs[0].value = '';
-  inputs[1].value = '';
-}
-
-function completeConsult(id) {
-  patients = patients.filter(p => p.id !== id);
-  const seen = parseInt(document.getElementById('m-seen').textContent) + 1;
-  document.getElementById('m-seen').textContent = seen;
-  selectedDoctor = null;
-  document.getElementById('consult-panel').innerHTML = '<div class="card" style="height:100%;"><div class="card-body" style="display:flex;align-items:center;justify-content:center;height:300px;flex-direction:column;gap:8px;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div style="color:var(--text3);font-size:13px;">Select a patient to begin consultation</div></div></div>';
-  showToast('✓ Consultation complete — patient discharged');
-  renderDoctorList();
-}
-
-// ══════════════════════════════════════════
-// TV DISPLAY BOARD
-// ══════════════════════════════════════════
-function renderTVBoard() {
-  const sorted = sortedPatients(patients);
-  const now = sorted[0];
-  const next = sorted.slice(1, 5);
-
-  const tvColors = { critical:'#ef5350', urgent:'#fb8c00', routine:'#66bb6a', booked:'#42a5f5' };
-
-  document.getElementById('tv-now-calling').innerHTML = now ? `
-    <div class="tv-section-title">Now calling</div>
-    <div style="display:flex;align-items:center;gap:16px;padding:14px;background:rgba(255,255,255,0.06);border-radius:8px;border:1px solid rgba(255,255,255,0.12);margin-bottom:14px;">
-      <div style="font-family:'DM Mono',monospace;font-size:32px;font-weight:400;color:white;min-width:80px;">${now.id}</div>
-      <div>
-        <div style="font-size:18px;color:white;font-weight:500;">${now.first} ${now.last.charAt(0)}.</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:2px;">${now.dept}</div>
-      </div>
-      <div style="margin-left:auto;width:14px;height:14px;border-radius:50%;background:${tvColors[now.triage]};box-shadow:0 0 12px ${tvColors[now.triage]}66;"></div>
-    </div>` : '';
-
-  document.getElementById('tv-next-up').innerHTML = next.map(p => `
-    <div class="tv-row">
-      <div class="tv-ticket">${p.id}</div>
-      <div class="tv-name">${p.first} ${p.last.charAt(0)}.</div>
-      <div class="tv-dept">${p.dept}</div>
-      <div class="tv-triage-dot" style="background:${tvColors[p.triage]};"></div>
-    </div>`).join('');
-
-  document.getElementById('tv-clock-display').textContent = document.getElementById('clock').textContent;
-}
-
-function openTVFullscreen() {
-  const sorted = sortedPatients(patients);
-  const tvColors = { critical:'#ef5350', urgent:'#fb8c00', routine:'#66bb6a', booked:'#42a5f5' };
-  const now = sorted[0];
-  const next = sorted.slice(1, 8);
-  const w = window.open('', '_blank', 'width=1280,height=720');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HealthQueue — Display Board</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#0a1628;font-family:'DM Sans',sans-serif;color:white;height:100vh;display:flex;flex-direction:column;}
-  .hdr{background:#0f2040;padding:20px 40px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.08);}
-  .logo{font-size:22px;font-weight:600;}
-  .clk{font-family:'DM Mono',monospace;font-size:28px;color:rgba(255,255,255,0.6);}
-  .now-section{padding:30px 40px;background:rgba(255,255,255,0.03);}
-  .now-lbl{font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:12px;}
-  .now-card{display:flex;align-items:center;gap:24px;background:rgba(255,255,255,0.06);border-radius:12px;padding:20px 28px;border:1px solid rgba(255,255,255,0.1);}
-  .now-ticket{font-family:'DM Mono',monospace;font-size:52px;font-weight:400;min-width:140px;}
-  .now-name{font-size:32px;font-weight:500;}
-  .now-dept{font-size:18px;color:rgba(255,255,255,0.5);margin-top:6px;}
-  .next-section{flex:1;padding:20px 40px;}
-  .next-row{display:flex;align-items:center;gap:20px;padding:12px 20px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.06);}
-  .next-ticket{font-family:'DM Mono',monospace;font-size:22px;min-width:100px;}
-  .next-name{font-size:18px;flex:1;}
-  .next-dept{font-size:14px;color:rgba(255,255,255,0.4);}
-  .dot{width:14px;height:14px;border-radius:50%;}
-  .footer{padding:16px 40px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,0.3);}
-  </style></head><body>
-  <div class="hdr"><div class="logo">⊕ HealthQueue</div><div class="clk" id="clk">${document.getElementById('clock').textContent}</div></div>
-  ${now?`<div class="now-section"><div class="now-lbl">Now calling</div><div class="now-card"><div class="now-ticket">${now.id}</div><div><div class="now-name">${now.first} ${now.last}</div><div class="now-dept">${now.dept}</div></div><div class="dot" style="margin-left:auto;background:${tvColors[now.triage]};box-shadow:0 0 16px ${tvColors[now.triage]}88;"></div></div></div>`:''}
-  <div class="next-section"><div class="now-lbl">Next up</div>
-  ${next.map(p=>`<div class="next-row"><div class="next-ticket">${p.id}</div><div class="next-name">${p.first} ${p.last}</div><div class="next-dept">${p.dept}</div><div class="dot" style="background:${tvColors[p.triage]};"></div></div>`).join('')}
-  </div>
-  <div class="footer"><span>Please wait to be called. SMS <strong>QUEUE</strong> to 31234 for your number</span><span>Powered by HealthQueue</span></div>
-  <script>setInterval(()=>{const n=new Date();document.getElementById('clk').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');},1000);<\/script>
-  </body></html>`);
-}
-
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // SMS PAGE
-// ══════════════════════════════════════════
-function renderSMSPage() {
-  const sel = document.getElementById('sms-patient');
+// ═══════════════════════════════════════════════
+function updateSMSDropdown() {
+  const sel = document.getElementById('sms-patient-sel');
+  if (!sel) return;
+  const cur = sel.value;
   sel.innerHTML = '<option value="">Select patient...</option>' +
-    sortedPatients(patients).map(p => `<option value="${p.id}">${p.first} ${p.last} (${p.id})</option>`).join('');
-  renderSMSLog();
-  document.getElementById('sms-total-badge').textContent = smsCount + ' sent';
+    sorted(queue).map(p=>`<option value="${p.id}">${p.first_name} ${p.last_name} (${p.ticket})</option>`).join('');
+  if (cur) sel.value = cur;
 }
 
-const SMS_TEMPLATES = {
-  'turn-soon': 'HEALTHQUEUE: Your turn is 3 patients away. Please make your way to the clinic now.',
-  'ready':     'HEALTHQUEUE: It is your turn. Please report to the reception desk immediately.',
-  'missed':    'HEALTHQUEUE: You missed your turn. Please return to reception to be re-queued.',
-  'appointment':'HEALTHQUEUE: Reminder: you have an appointment today. Please arrive 15 minutes early.',
-  'results':   'HEALTHQUEUE: Your test results are ready for collection. Please visit the clinic during operating hours.',
+const TEMPLATES = {
+  'turn-soon':   'HealthQueue: Your turn is 3 patients away. Please make your way to the clinic now.',
+  'ready':       'HealthQueue: It is your turn. Please report to the reception desk immediately.',
+  'missed':      'HealthQueue: You missed your turn. Please return to reception to be re-queued.',
+  'appointment': 'HealthQueue: Reminder — you have an appointment today. Please arrive 15 minutes early.',
+  'results':     'HealthQueue: Your test results are ready for collection. Please visit during operating hours.',
 };
 
-function fillSMSTemplate() {
+function fillTemplate() {
   const t = document.getElementById('sms-template').value;
-  if (SMS_TEMPLATES[t]) document.getElementById('sms-message').value = SMS_TEMPLATES[t];
-  updateCharCount();
+  if (TEMPLATES[t]) {
+    document.getElementById('sms-msg').value = TEMPLATES[t];
+    document.getElementById('char-count').textContent = TEMPLATES[t].length+'/160';
+  }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('sms-message').addEventListener('input', updateCharCount);
-});
-
-function updateCharCount() {
-  const len = document.getElementById('sms-message').value.length;
-  document.getElementById('sms-char-count').textContent = len + ' / 160';
-}
-
-function sendSMS() {
-  const pid = document.getElementById('sms-patient').value;
-  const msg = document.getElementById('sms-message').value.trim();
+async function sendMessage() {
+  const pid = document.getElementById('sms-patient-sel').value;
+  const msg = document.getElementById('sms-msg').value.trim();
+  const channel = document.getElementById('sms-channel').value;
   if (!pid) { showToast('⚠ Select a patient'); return; }
   if (!msg) { showToast('⚠ Enter a message'); return; }
-  const p = patients.find(x=>x.id===pid);
-  const now = new Date();
-  const time = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-  smsLog.unshift({ time, name:`${p.first} ${p.last}`, phone:p.phone, msg, status:'delivered' });
-  smsCount++;
-  document.getElementById('sms-message').value = '';
-  document.getElementById('sms-template').value = '';
-  document.getElementById('sms-patient').value = '';
-  renderSMSLog();
-  document.getElementById('sms-total-badge').textContent = smsCount + ' sent';
-  document.getElementById('m-sms').textContent = smsCount;
-  showToast(`✓ SMS sent to ${p.first} ${p.last}`);
-}
 
-function sendBulkSMS() {
-  const msg = document.getElementById('bulk-msg').value.trim();
-  if (!msg) { showToast('⚠ Enter a message'); return; }
-  showToast(`✓ Bulk SMS sent to ${patients.length} patients`);
-  smsCount += patients.length;
-  document.getElementById('sms-total-badge').textContent = smsCount + ' sent';
+  const p = queue.find(x=>x.id===pid);
+  if (!p?.phone) { showToast('⚠ Patient has no phone number'); return; }
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled=true; btn.textContent='Sending...';
+
+  try {
+    const results = [];
+    if (channel!=='whatsapp') results.push(sendTwilioSMS(p.phone, msg));
+    if (channel!=='sms')      results.push(sendTwilioWhatsApp(p.phone, msg));
+    const res = await Promise.all(results);
+
+    const failed = res.filter(r=>!r.ok);
+    if (failed.length) throw new Error(failed[0].error);
+
+    await logSMS(`${p.first_name} ${p.last_name}`, p.phone, msg, channel);
+    showToast(`✓ Message sent to ${p.first_name}`, 'success');
+    document.getElementById('sms-msg').value='';
+    document.getElementById('sms-template').value='';
+  } catch(e) {
+    showToast('Send failed: '+e.message, 'error');
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22,2 15,22 11,13 2,9"/></svg> Send via Twilio';
+  }
 }
 
 function renderSMSLog() {
-  document.getElementById('sms-log').innerHTML = smsLog.slice(0,12).map(s => `
-    <div class="sms-log-item">
-      <div class="sms-time">${s.time}</div>
-      <div class="sms-recipient">${s.name}</div>
-      <div class="sms-msg">${s.msg}</div>
-      <div class="sms-status badge badge-green" style="align-self:center;">✓ ${s.status}</div>
+  const panel = document.getElementById('sms-log-panel');
+  if (!panel) return;
+  document.getElementById('sms-log-count').textContent = smsLog.length + ' sent';
+  if (!smsLog.length) {
+    panel.innerHTML = '<div style="color:var(--text3);font-size:12px;">No messages sent yet</div>';
+    return;
+  }
+  panel.innerHTML = smsLog.map(s=>`
+    <div class="sms-item">
+      <div class="sms-time">${s.created_at?new Date(s.created_at).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):''}</div>
+      <div class="sms-recipient">${s.patient||'—'}</div>
+      <div class="sms-msg">${s.message||''}</div>
+      <span class="badge badge-green" style="align-self:center;font-size:9px;">${s.channel==='whatsapp'?'📱 WA':'💬 SMS'} ✓</span>
     </div>`).join('');
 }
 
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // ANALYTICS
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function renderAnalytics() {
   const hours = [3,6,9,14,19,22,18,14,11,8,5,3];
   const labels = ['7','8','9','10','11','12','1','2','3','4','5','6'];
   const mx = Math.max(...hours);
-  document.getElementById('analytics-chart').innerHTML = hours.map((h,i) => `<div class="bar" style="height:${Math.round(h/mx*82)}px;background:${h>16?'var(--red)':h>10?'var(--amber)':'var(--blue)'};opacity:0.8;"></div>`).join('');
-  document.getElementById('analytics-labels').innerHTML = labels.map(l => `<div class="bar-lbl">${l}</div>`).join('');
+  document.getElementById('hourly-chart').innerHTML = hours.map((h,i)=>`<div class="bar" style="height:${Math.round(h/mx*75)}px;background:${h>16?'var(--red)':h>10?'var(--amber)':'var(--blue)'};opacity:0.7;"></div>`).join('');
+  document.getElementById('hourly-labels').innerHTML = labels.map(l=>`<div class="bar-lbl">${l}</div>`).join('');
 
-  const weekdays = ['Mon','Tue','Wed','Thu','Fri'];
-  const waits = [68,61,72,55,47];
-  document.getElementById('wait-trend-chart').innerHTML = weekdays.map((d,i) => `
+  const counts = {critical:0,urgent:0,routine:0,booked:0};
+  queue.forEach(p=>{ if(counts[p.triage]!==undefined) counts[p.triage]++; });
+  const total = queue.length||1;
+  document.getElementById('analytics-triage').innerHTML =
+    Object.entries(counts).map(([t,c])=>`
+      <div class="progress-row">
+        <div class="progress-label">
+          <span style="display:flex;align-items:center;gap:6px;"><span class="triage-dot ${TRIAGE[t].dot}"></span>${TRIAGE[t].label}</span>
+          <span style="font-family:'DM Mono',monospace;">${c} (${Math.round(c/total*100)}%)</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.round(c/total*100)}%;background:${TRIAGE[t].color};"></div></div>
+      </div>`).join('');
+
+  const depts = ['General','Emergency','Chronic','Orthopaedics','Maternal'];
+  const deptCounts = {};
+  depts.forEach(d=>deptCounts[d]=(queue.filter(p=>p.department===d).length));
+  const mx2 = Math.max(...Object.values(deptCounts),1);
+  document.getElementById('analytics-depts').innerHTML =
+    depts.map(d=>`
+      <div class="progress-row">
+        <div class="progress-label"><span>${d}</span><span style="font-family:'DM Mono',monospace;">${deptCounts[d]}</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.round(deptCounts[d]/mx2*100)}%;background:var(--blue);"></div></div>
+      </div>`).join('');
+
+  const seen = parseInt(document.getElementById('m-seen').textContent)||0;
+  document.getElementById('perf-panel').innerHTML = [
+    {lbl:'Patients seen',val:seen,target:100,pct:Math.min(100,seen),color:'var(--green)'},
+    {lbl:'Avg wait ≤ 45min',val:document.getElementById('m-wait').textContent+'m',target:'45m',pct:60,color:'var(--amber)'},
+    {lbl:'Critical immediate',val:'100%',target:'100%',pct:100,color:'var(--green)'},
+    {lbl:'SMS sent',val:smsCount,target:24,pct:Math.min(100,Math.round(smsCount/24*100)),color:'var(--blue)'},
+  ].map(t=>`
     <div class="progress-row">
-      <div class="progress-label"><span>${d}</span><span style="font-family:'DM Mono',monospace;">${waits[i]}m</span></div>
-      <div class="progress-track"><div class="progress-fill" style="width:${Math.round(waits[i]/80*100)}%;background:${waits[i]<50?'var(--green)':waits[i]<65?'var(--amber)':'var(--red)'};"></div></div>
-    </div>`).join('');
-
-  const conditions = [
-    {name:'Hypertension / Blood pressure', count:18, color:'var(--blue)'},
-    {name:'Respiratory / Asthma', count:14, color:'var(--amber)'},
-    {name:'Diabetes follow-up', count:11, color:'var(--green)'},
-    {name:'Injuries / Trauma', count:9,  color:'var(--red)'},
-    {name:'Maternal / Antenatal', count:7, color:'var(--purple)'},
-    {name:'Skin conditions', count:6, color:'var(--accent)'},
-  ];
-  document.getElementById('top-conditions').innerHTML = conditions.map(c => `
-    <div class="cond-row">
-      <div class="cond-name">${c.name}</div>
-      <div class="cond-count">${c.count}</div>
-      <div class="cond-bar"><div class="cond-fill" style="width:${Math.round(c.count/18*100)}%;background:${c.color};"></div></div>
-    </div>`).join('');
-
-  const targets = [
-    {lbl:'Patients seen / day', val:83, target:100, pct:83, color:'var(--amber)'},
-    {lbl:'Avg wait time met (≤45min)', val:'No', target:'Yes', pct:60, color:'var(--amber)'},
-    {lbl:'Critical seen immediately', val:'100%', target:'100%', pct:100, color:'var(--green)'},
-    {lbl:'SMS notifications sent', val:smsCount, target:24, pct:Math.min(100,Math.round(smsCount/24*100)), color:'var(--blue)'},
-  ];
-  document.getElementById('perf-vs-targets').innerHTML = targets.map(t => `
-    <div class="progress-row">
-      <div class="progress-label"><span style="color:var(--text2);">${t.lbl}</span><span style="font-weight:500;">${t.val} <span style="color:var(--text3);font-weight:400;">/ ${t.target}</span></span></div>
+      <div class="progress-label"><span style="color:var(--text2);">${t.lbl}</span><span style="font-family:'DM Mono',monospace;">${t.val}<span style="color:var(--text3);"> / ${t.target}</span></span></div>
       <div class="progress-track"><div class="progress-fill" style="width:${t.pct}%;background:${t.color};"></div></div>
     </div>`).join('');
-
-  const depts = [
-    {name:'General', count:6, cap:8},
-    {name:'Emergency', count:2, cap:4},
-    {name:'Chronic', count:2, cap:6},
-    {name:'Ortho', count:1, cap:3},
-    {name:'Maternal', count:1, cap:4},
-  ];
-  document.getElementById('dept-load').innerHTML = depts.map(d => `
-    <div class="cond-row">
-      <div class="cond-name">${d.name}</div>
-      <div style="font-size:12px;color:var(--text3);min-width:50px;text-align:right;">${d.count}/${d.cap}</div>
-      <div class="cond-bar" style="width:90px;"><div class="cond-fill" style="width:${Math.round(d.count/d.cap*100)}%;background:${d.count/d.cap>0.8?'var(--red)':d.count/d.cap>0.6?'var(--amber)':'var(--green)'};"></div></div>
-    </div>`).join('');
-
-  const sat = [
-    {lbl:'Waiting time', pct:62, color:'var(--amber)'},
-    {lbl:'Staff friendliness', pct:91, color:'var(--green)'},
-    {lbl:'Communication', pct:78, color:'var(--green)'},
-    {lbl:'Cleanliness', pct:85, color:'var(--green)'},
-  ];
-  document.getElementById('satisfaction-breakdown').innerHTML = sat.map(s => `
-    <div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;"><span style="color:var(--text2);">${s.lbl}</span><span>${s.pct}%</span></div>
-      <div class="progress-track"><div class="progress-fill" style="width:${s.pct}%;background:${s.color};"></div></div>
-    </div>`).join('');
 }
 
-// ══════════════════════════════════════════
-// FACILITY MANAGER
-// ══════════════════════════════════════════
-function renderFacility() {
-  const staff = [
-    {name:'Dr. A. Booysen', role:'General Practitioner', shift:'07:00–15:00', status:'On duty'},
-    {name:'Dr. S. Mthembu', role:'Emergency Physician',  shift:'07:00–15:00', status:'On duty'},
-    {name:'Dr. P. Nair',    role:'GP / Chronic',         shift:'07:00–13:00', status:'On duty'},
-    {name:'Dr. L. Hendricks',role:'General Practitioner',shift:'07:00–15:00', status:'On duty'},
-    {name:'Sister N. Dlamini',role:'Reception / Triage', shift:'07:00–15:00', status:'On duty'},
-    {name:'Sister T. Hadebe',role:'Triage Nurse',        shift:'07:00–15:00', status:'On duty'},
-    {name:'Dr. Y. Abrahams', role:'General Practitioner',shift:'14:00–22:00', status:'Arriving 14:00'},
-    {name:'Dr. F. Du Plessis',role:'Emergency Physician',shift:'14:00–22:00', status:'Arriving 14:00'},
-  ];
-  document.getElementById('staff-roster').innerHTML = staff.map(s => `
-    <div class="shift-row">
-      <div>
-        <div style="font-weight:500;font-size:13px;">${s.name}</div>
-        <div style="font-size:12px;color:var(--text3);">${s.role}</div>
-      </div>
-      <div style="text-align:right;">
-        <span class="badge ${s.status==='On duty'?'badge-green':'badge-amber'}">${s.status}</span>
-        <div style="font-size:11px;color:var(--text3);margin-top:3px;font-family:'DM Mono',monospace;">${s.shift}</div>
-      </div>
-    </div>`).join('');
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+const PAGE_TITLES = {
+  dashboard:'Dashboard', queue:'Live Queue', register:'Register Patient',
+  triage:'Triage', doctor:'Doctor Console', kiosk:'Self-Check-In',
+  display:'TV Display Board', sms:'SMS / WhatsApp', analytics:'Analytics'
+};
 
-  const resources = [
-    {name:'Consultation rooms', used:4, total:6},
-    {name:'Emergency bays', used:2, total:4},
-    {name:'Waiting room seats', used:18, total:30},
-    {name:'Blood pressure machines', used:2, total:3},
-    {name:'Glucometers', used:1, total:4},
-  ];
-  document.getElementById('capacity-panel').innerHTML = resources.map(r => `
-    <div class="progress-row">
-      <div class="progress-label">
-        <span style="color:var(--text2);">${r.name}</span>
-        <span style="font-weight:500;">${r.used}/${r.total}</span>
-      </div>
-      <div class="progress-track"><div class="progress-fill" style="width:${Math.round(r.used/r.total*100)}%;background:${r.used/r.total>0.8?'var(--red)':r.used/r.total>0.6?'var(--amber)':'var(--green)'};"></div></div>
-    </div>`).join('');
-
-  const weekly = [
-    {day:'Mon',seen:91,wait:68,sms:22,sat:'4.2'},
-    {day:'Tue',seen:87,wait:61,sms:19,sat:'4.0'},
-    {day:'Wed',seen:95,wait:72,sms:28,sat:'3.8'},
-    {day:'Thu',seen:88,wait:55,sms:21,sat:'4.3'},
-    {day:'Fri',seen:83,wait:47,sms:18,sat:'4.1'},
-  ];
-  document.getElementById('weekly-report').innerHTML = `
-    <table class="queue-table">
-      <thead><tr><th>Day</th><th>Patients seen</th><th>Avg wait (min)</th><th>SMS sent</th><th>Satisfaction</th><th>Target met</th></tr></thead>
-      <tbody>${weekly.map(w=>`<tr>
-        <td style="font-weight:500;">${w.day}</td>
-        <td><span class="wait-time">${w.seen}</span></td>
-        <td><span class="wait-time ${w.wait>60?'over':''}">${w.wait}</span></td>
-        <td>${w.sms}</td>
-        <td>${w.sat}/5</td>
-        <td><span class="badge ${w.seen>=90&&w.wait<=60?'badge-green':'badge-amber'}">${w.seen>=90&&w.wait<=60?'✓ Yes':'Partial'}</span></td>
-      </tr>`).join('')}</tbody>
-    </table>`;
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')?.includes("'"+page+"'")) n.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = PAGE_TITLES[page]||page;
+  if(page==='queue')     renderQueue();
+  if(page==='triage')    renderTriagePage();
+  if(page==='doctor')    renderDoctorList();
+  if(page==='display')   renderTVBoard();
+  if(page==='sms')       { renderSMSLog(); updateSMSDropdown(); }
+  if(page==='analytics') renderAnalytics();
 }
 
-function saveSettings() {
-  const name = document.getElementById('setting-clinic').value;
-  document.getElementById('clinic-name-display').textContent = name;
-  showToast('✓ Settings saved');
-}
-
-// ══════════════════════════════════════════
-// KIOSK
-// ══════════════════════════════════════════
-function kioskCheckin() {
-  const name = document.getElementById('kiosk-name').value.trim();
-  const reason = document.getElementById('kiosk-reason').value;
-  if (!name) { showToast('⚠ Please enter your name'); return; }
-  if (!reason) { showToast('⚠ Please select a reason'); return; }
-  const ticket = 'P' + String(nextTicket++).padStart(3,'0');
-  const triage = reason.includes('Emergency') ? 'critical' : reason.includes('medication')||reason.includes('results')||reason.includes('Follow') ? 'booked' : 'routine';
-  const wait = { critical:10, urgent:25, booked:25, routine:60 };
-  document.getElementById('kiosk-ticket').textContent = ticket;
-  document.getElementById('kiosk-wait-msg').textContent = 'Estimated wait: ~' + wait[triage] + ' minutes';
-  document.getElementById('kiosk-result').style.display = '';
-  document.getElementById('kiosk-name').value = '';
-  document.getElementById('kiosk-phone').value = '';
-  document.getElementById('kiosk-reason').value = '';
-  showToast(`✓ Checked in! Your ticket is ${ticket}`);
-}
-
-// ══════════════════════════════════════════
-// TOAST
-// ══════════════════════════════════════════
-function showToast(msg) {
+// ═══════════════════════════════════════════════
+// TOAST / NOTIF
+// ═══════════════════════════════════════════════
+function showToast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.className = 'toast' + (type?' '+type:'');
   t.style.display = 'block';
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.style.display = 'none', 3000);
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.style.display='none', 3200);
 }
 
-// ══════════════════════════════════════════
+function showNotif(title, msg) {
+  const nb = document.getElementById('notif-bubble');
+  document.getElementById('notif-title').textContent = title;
+  document.getElementById('notif-msg').textContent = msg;
+  nb.style.display = 'block';
+  clearTimeout(nb._t);
+  nb._t = setTimeout(()=>nb.style.display='none', 4000);
+}
+
+// ═══════════════════════════════════════════════
 // CLOCK
-// ══════════════════════════════════════════
+// ═══════════════════════════════════════════════
 function updateClock() {
-  const now = new Date();
-  const t = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const t = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
   document.getElementById('clock').textContent = t;
-  document.getElementById('tv-clock-display') && (document.getElementById('tv-clock-display').textContent = t);
+  const tv = document.getElementById('tv-clock');
+  if(tv) tv.textContent = t;
 }
 updateClock();
-setInterval(updateClock, 10000);
+setInterval(updateClock, 15000);
 
-// ══════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════
-renderDashboard();
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+async function boot() {
+  try {
+    const ok = await setupDatabase();
+    await fetchQueue();
+    await fetchSMSLog();
+    subscribeRealtime();
+    renderDashboard();
+    updateSMSDropdown();
+  } catch(e) {
+    console.error('Boot error:', e);
+    document.getElementById('conn-status').textContent = 'error';
+    document.getElementById('conn-banner').textContent = '⚠ Could not connect to Supabase: ' + e.message;
+    document.getElementById('conn-banner').classList.add('show');
+  }
+}
+
+boot();
 </script>
 </body>
 </html>
+
+
+
