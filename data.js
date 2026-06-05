@@ -1,57 +1,57 @@
 async function registerPatient() {
   if (!db) {
-    showToast("Database connection is completely offline.", "error");
+    alert("Database connection offline. Check your Supabase configuration.");
     return;
   }
 
-  // 1. Extract values exactly matching your layout inputs
-  const firstName = document.getElementById('r-first').value.trim();
-  const surname = document.getElementById('r-last').value.trim();
-  const phone = document.getElementById('r-phone').value.trim();
-  const complaint = document.getElementById('r-complaint').value.trim();
+  // Gather your HTML text values
+  const fName = document.getElementById('r-first').value.trim();
+  const sName = document.getElementById('r-last').value.trim();
+  const pNum = document.getElementById('r-phone').value.trim();
+  const cPlaint = document.getElementById('r-complaint').value.trim();
 
-  // Basic verification catch
-  if (!firstName || !surname || !phone || !complaint) {
-    alert("Please complete all fields marked with an asterisk (*)");
+  if (!fName || !sName || !pNum || !cPlaint) {
+    alert("Please fill in all fields marked with an asterisk (*)");
     return;
   }
 
   const btn = document.getElementById('reg-btn');
   btn.disabled = true;
-  btn.innerHTML = `<span class="spin"></span>Processing...`;
+  btn.innerText = "Processing...";
 
-  // 2. Map payload names cleanly to database parameters
+  // PAYLOAD FIELDS MUST MATCH THE SQL COLUMNS LOWERCASE
   const payload = {
-    first_name: firstName,
-    surname: surname,
+    first_name: fName,
+    surname: sName,
     sa_id_passport: document.getElementById('r-id').value.trim() || null,
     date_of_birth: document.getElementById('r-dob').value || null,
-    phone: phone,
+    phone: pNum,
     gender: document.getElementById('r-gender').value,
-    chief_complaint: complaint,
+    chief_complaint: cPlaint,
     department: document.getElementById('r-dept').value,
     visit_type: document.getElementById('r-type').value,
-    triage_status: selectedTriage, // Tracked via your grid selectors
+    triage_status: typeof selectedTriage !== 'undefined' ? selectedTriage : 'routine',
     blood_pressure: document.getElementById('r-bp').value.trim() || null,
     temperature_c: parseFloat(document.getElementById('r-temp').value) || null,
     pulse_bpm: parseInt(document.getElementById('r-pulse').value) || null,
     o2_sat_percent: parseInt(document.getElementById('r-o2').value) || null,
-    send_sms_confirmation: document.getElementById('chk-sms').checked,
-    send_whatsapp_confirmation: document.getElementById('chk-wa').checked
+    send_sms_confirmation: document.getElementById('chk-sms')?.checked ?? true,
+    send_whatsapp_confirmation: document.getElementById('chk-wa')?.checked ?? true
   };
 
-  // 3. Post cleanly into 'queue_entries'
+  console.log("Sending clean payload to Supabase:", payload);
+
   const { error } = await db.from('queue_entries').insert([payload]);
 
   if (error) {
-    console.error("Database mismatch details:", error);
-    alert("Error submitting entry: " + error.message);
+    console.error("Supabase Error Details:", error);
+    alert("Database Rejected Data:\n" + error.message + "\n\nHint: Check your browser developer console (F12) to see exactly what failed.");
   } else {
-    alert("Patient successfully synced to live queue database!");
-    clearReg(); // Resets layout form smoothly
-    if (typeof fetchQueueData === 'function') fetchQueueData(); 
+    alert("Success! Patient added to the queue database.");
+    if (typeof clearReg === 'function') clearReg();
+    if (typeof fetchQueueData === 'function') fetchQueueData();
   }
-  
+
   btn.disabled = false;
-  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg> Register &amp; Add to Queue`;
+  btn.innerText = "Register & Add to Queue";
 }
