@@ -1749,3 +1749,401 @@ renderDashboard();
 </script>
 </body>
 </html>
+<script>
+// 3. UI RENDERING PIPELINES
+function processAndRenderUI() {
+    renderDashboardMetrics();
+    renderMainLiveQueue();
+    renderTriageQueue();
+    renderDoctorConsoleQueue();
+    renderTVDisplayBoard();
+}
+
+function renderDashboardMetrics() {
+    const activeQueue = localPatientsStore.filter(p => ['waiting', 'triage', 'consulting'].includes(p.status));
+    const critical = activeQueue.filter(p => p.triage_category === 'critical').length;
+    const seenToday = localPatientsStore.filter(p => p.status === 'seen').length;
+    
+    document.getElementById('m-queue').innerText = activeQueue.length;
+    document.getElementById('m-queue-sub').innerText = `${activeQueue.filter(p => p.status === 'waiting').length} unassigned`;
+    document.getElementById('m-critical').innerText = critical;
+    document.getElementById('m-seen').innerText = seenToday;
+    
+    // Simple dynamic mock calculation for wait time metrics
+    document.getElementById('m-wait').innerText = activeQueue.length > 0 ? Math.min(114, activeQueue.length * 12) : 0;
+
+    // Render Next-In-Queue Preview table on dashboard
+    const dashTable = document.getElementById('dash-table');
+    const upcoming = activeQueue.slice(0, 4);
+    
+    if(upcoming.length === 0) {
+        dashTable.innerHTML = `<tr><td style="color:var(--text3); padding:16px;">No patients currently in active queue lines.</td></tr>`;
+        return;
+    }
+
+    dashTable.innerHTML = upcoming.map(p => `
+        <tr onclick="openPatientModal('${p.id}')">
+            <td><span class="tdot ${p.triage_category}"></span></td>
+            <td class="wmono">${p.ticket_number}</td>
+            <td class="pname">${p.first_name} ${p.surname}</td>
+            <td><span class="badge badge-gray">${p.department}</span></td>
+            <td><span class="badge ${getTriageBadgeClass(p.triage_category)}">${p.triage_category}</span></td>
+        </tr>
+    `).join('');
+}
+
+function renderMainLiveQueue() {
+    const table = document.getElementById('full-table');
+    let filtered = localPatientsStore.filter(p => ['waiting', 'triage', 'consulting'].includes(p.status));
+    
+    selectedTriageFilter = document.getElementById('qf-triage').value;
+    selectedDeptFilter = document.getElementById('qf-dept').value;
+
+    if (selectedTriageFilter !== 'all') filtered = filtered.filter(p => p.triage_category === selectedTriageFilter);
+    if (selectedDeptFilter !== 'all') filtered = filtered.filter(p => p.department === selectedDeptFilter);
+
+    document.getElementById('q-count').innerText = filtered.length;
+
+    if(filtered.length === 0) {
+        table.innerHTML = `<tbody><tr><td colspan="6" style="padding:28px; text-align:center; color:var(--text3);">No tracking structures match specified criteria settings.</td></tr></tbody>`;
+        return;
+    }
+
+    let html = `
+        <thead>
+            <tr>
+                <th>Ref</th>
+                <th>Patient Profile</th>
+                <th>Department</th>
+                <th>Triage Priority</th>
+                <th>Status Pipeline</th>
+                <th>Joined</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    html += filtered.map(p => `
+        <tr onclick="openPatientModal('${p.id}')">
+            <td class="wmono" style="font-weight:600;">${p.ticket_number}</td>
+            <td>
+                <div class="pname">${p.first_name} ${p.surname}</div>
+                <div class="psub">Complaint: ${p.chief_complaint}</div>
+            </td>
+            <td><span class="badge badge-gray">${p.department}</span></td>
+            <td><span class="badge ${getTriageBadgeClass(p.triage_category)}">${p.triage_category.toUpperCase()}</span></td>
+            <td><span class="badge ${getStatusBadgeClass(p.status)}">${p.status}</span></td>
+            <td class="wmono">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+        </tr>
+    `).join('');
+
+    html += `</tbody>`;
+    table.innerHTML = html;
+}
+
+function renderTriageQueue() {
+    const table = document.getElementById('triage-table');
+    const pendingTriage = localPatientsStore.filter(p => p.status === 'waiting');
+    
+    document.getElementById('t-pending').innerText = `${pendingTriage.length} Awaiting Care Allocation`;
+
+    if(pendingTriage.length === 0) {
+        table.innerHTML = `<tbody><tr><td colspan="4" style="padding:24px; text-align:center; color:var(--text3);">Clear triage pipeline. No newly assigned entries.</td></tr></tbody>`;
+        return;
+    }
+
+    table.innerHTML = `
+        <thead><tr><th>Ticket</th><th>Identity Name</th><th>Main Complaint</th><th>Timing</th></tr></thead>
+        <tbody>` + pendingTriage.map(p => `
+        <tr onclick="openPatientModal('${p.id}')">
+            <td class="wmono">${p.ticket_number}</td>
+            <td class="pname">${p.first_name} ${p.surname}</td>
+            <td class="psub">${p.chief_complaint}</td>
+            <td class="wmono">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+        </tr>
+    `).join('') + `</tbody>`;
+}
+
+function renderDoctorConsoleQueue() {
+    const table = document.getElementById('doc-table');
+    const consultingQueue = localPatientsStore.filter(p => ['triage', 'consulting'].includes(p.status));
+    
+    document.getElementById('doc-queue-count').innerText = `${consultingQueue.length} Active Target Cases`;
+
+    if(consultingQueue.length === 0) {
+        table.innerHTML = `<tbody><tr><td colspan="4" style="padding:24px; text-align:center; color:var(--text3);">No prioritized cases pending assessment.</td></tr></tbody>`;
+        return;
+    }
+
+    table.innerHTML = `
+        <thead><tr><th>Code</th><th>Name</th><th>Priority</th><th>Action</th></tr></thead>
+        <tbody>` + consultingQueue.map(p => `
+        <tr>
+            <td class="wmono">${p.ticket_number}</td>
+            <td class="pname">${p.first_name} ${p.surname}</td>
+            <td><span class="badge ${getTriageBadgeClass(p.triage_category)}">${p.triage_category}</span></td>
+            <td><button class="btn btn-sm btn-primary" onclick="loadPatientIntoConsultation('${p.id}')">Examine</button></td>
+        </tr>
+    `).join('') + `</tbody>`;
+}
+
+function renderTVDisplayBoard() {
+    const activelyServed = localPatientsStore.find(p => p.status === 'consulting');
+    const container = document.getElementById('tv-rows-container');
+    const upcomingList = localPatientsStore.filter(p => p.status === 'triage').slice(0, 5);
+
+    if (activelyServed) {
+        document.getElementById('tv-active-ticket').innerText = activelyServed.ticket_number;
+        document.getElementById('tv-active-name').innerText = `${activelyServed.first_name} ${activelyServed.surname.substring(0,1)}.`;
+        document.getElementById('tv-active-room').innerText = `Proceed immediately to Clinical Dept: ${activelyServed.department}`;
+    } else {
+        document.getElementById('tv-active-ticket').innerText = "---";
+        document.getElementById('tv-active-name').innerText = "System Idle Line";
+        document.getElementById('tv-active-room').innerText = "Awaiting call sequencing...";
+    }
+
+    if(upcomingList.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:20px; color:rgba(255,255,255,0.25);">No immediate sequence upcoming profiles.</div>`;
+        return;
+    }
+
+    container.innerHTML = upcomingList.map(p => `
+        <div class="tv-row">
+            <span class="tv-tkt">${p.ticket_number}</span>
+            <span class="tv-nm">${p.first_name} ${p.surname.substring(0,1)}.</span>
+            <span class="tv-dept">${p.department}</span>
+            <span class="tv-dot ${p.triage_category}"></span>
+        </div>
+    `).join('');
+}
+
+// Global UI Form Utility functions
+function getTriageBadgeClass(cat) {
+    if(cat === 'critical') return 'badge-red';
+    if(cat === 'urgent') return 'badge-amber';
+    if(cat === 'routine') return 'badge-green';
+    return 'badge-blue';
+}
+
+function getStatusBadgeClass(status) {
+    if(status === 'consulting') return 'badge-purple';
+    if(status === 'triage') return 'badge-teal';
+    if(status === 'waiting') return 'badge-amber';
+    return 'badge-gray';
+}
+
+function renderQueue() { processAndRenderUI(); }
+</script>
+<script>
+// 4. ACTION CONTROLLERS & DATA PERSISTENCE LAYER
+
+function selTriage(category) {
+    activeTriageSelection = category;
+    document.querySelectorAll('.tcard').forEach(c => {
+        c.className = 'tcard'; 
+    });
+    document.getElementById('tc-' + category).classList.add('sel-' + category);
+}
+
+async function registerPatient() {
+    const first = document.getElementById('r-first').value.trim();
+    const last = document.getElementById('r-last').value.trim();
+    const phone = document.getElementById('r-phone').value.trim();
+    const complaint = document.getElementById('r-complaint').value.trim();
+    
+    if(!first || !last || !phone || !complaint || !activeTriageSelection) {
+        showToast("⚠️ Missing required registration entries.");
+        return;
+    }
+
+    document.getElementById('reg-btn').disabled = true;
+
+    // Automated generation logic for systemic reference tickets
+    const codePrefix = activeTriageSelection.charAt(0).toUpperCase();
+    const sequentialId = Math.floor(Math.random() * 900) + 100; // Mock sequence for UI execution simplicity
+    const allocatedTicket = `${codePrefix}-${sequentialId}`;
+
+    const newRecord = {
+        ticket_number: allocatedTicket,
+        first_name: first,
+        surname: last,
+        sa_id_passport: document.getElementById('r-id').value,
+        dob: document.getElementById('r-dob').value || null,
+        phone: phone,
+        gender: document.getElementById('r-gender').value,
+        chief_complaint: complaint,
+        department: document.getElementById('r-dept').value,
+        visit_type: document.getElementById('r-type').value,
+        triage_category: activeTriageSelection,
+        status: 'waiting',
+        bp: document.getElementById('r-bp').value,
+        temp: parseFloat(document.getElementById('r-temp').value) || null,
+        pulse: parseInt(document.getElementById('r-pulse').value) || null,
+        o2_sat: parseInt(document.getElementById('r-o2').value) || null
+    };
+
+    const { error } = await supabase.from('patients').insert([newRecord]);
+
+    document.getElementById('reg-btn').disabled = false;
+
+    if(error) {
+        showToast("Error creating tracking entity record.");
+    } else {
+        showToast("Patient logged and enqueued successfully.");
+        clearReg();
+        nav('queue');
+    }
+}
+
+function clearReg() {
+    document.getElementById('r-first').value = '';
+    document.getElementById('r-last').value = '';
+    document.getElementById('r-id').value = '';
+    document.getElementById('r-dob').value = '';
+    document.getElementById('r-phone').value = '';
+    document.getElementById('r-complaint').value = '';
+    document.getElementById('r-bp').value = '';
+    document.getElementById('r-temp').value = '';
+    document.getElementById('r-pulse').value = '';
+    document.getElementById('r-o2').value = '';
+    activeTriageSelection = null;
+    document.querySelectorAll('.tcard').forEach(c => c.className = 'tcard');
+}
+
+// 5. MODAL ENGAGEMENT OVERLAYS
+function openPatientModal(id) {
+    currentSelectedPatientId = id;
+    const patient = localPatientsStore.find(p => p.id === id);
+    if (!patient) return;
+
+    document.getElementById('modal-pname').innerText = `${patient.first_name} ${patient.surname}`;
+    document.getElementById('modal-ticket').innerText = patient.ticket_number;
+    document.getElementById('modal-triage').innerHTML = `<span class="badge ${getTriageBadgeClass(patient.triage_category)}">${patient.triage_category}</span>`;
+    document.getElementById('modal-id').innerText = patient.sa_id_passport || 'None Disclosed';
+    document.getElementById('modal-dob').innerText = patient.dob || 'Unknown';
+    document.getElementById('modal-phone').innerText = patient.phone;
+    document.getElementById('modal-gender').innerText = patient.gender || 'Not specified';
+    document.getElementById('modal-complaint').innerText = patient.chief_complaint;
+    
+    document.getElementById('modal-bp').innerText = patient.bp || '—';
+    document.getElementById('modal-temp').innerText = patient.temp ? `${patient.temp} °C` : '—';
+    document.getElementById('modal-pulse').innerText = patient.pulse ? `${patient.pulse} bpm` : '—';
+    document.getElementById('modal-o2').innerText = patient.o2_sat ? `${patient.o2_sat} %` : '—';
+
+    // Adjust button controls depending on current lifecycle routing status
+    const actionBtn = document.getElementById('modal-btn-action');
+    if (patient.status === 'waiting') {
+        actionBtn.innerText = "Authorize Triage Stream";
+        actionBtn.style.display = 'inline-flex';
+    } else if (patient.status === 'triage') {
+        actionBtn.innerText = "Route to Consult Console";
+        actionBtn.style.display = 'inline-flex';
+    } else {
+        actionBtn.style.display = 'none';
+    }
+
+    document.getElementById('patient-modal').classList.add('open');
+}
+
+async function actionPatient() {
+    if (!currentSelectedPatientId) return;
+    const patient = localPatientsStore.find(p => p.id === currentSelectedPatientId);
+    let nextStatus = 'triage';
+    
+    if (patient.status === 'triage') nextStatus = 'consulting';
+
+    const { error } = await supabase
+        .from('patients')
+        .update({ status: nextStatus })
+        .eq('id', currentSelectedPatientId);
+
+    closeModal();
+    if (error) showToast("Workflow tracking failed to progress.");
+    else showToast(`Workflow advanced to status parameter: ${nextStatus}`);
+}
+
+async function removePatient() {
+    if (!currentSelectedPatientId) return;
+    
+    const { error } = await supabase
+        .from('patients')
+        .update({ status: 'removed' })
+        .eq('id', currentSelectedPatientId);
+
+    closeModal();
+    if(error) showToast("Action processing encountered operational issues.");
+    else showToast("Target identifier removed from active queue lines.");
+}
+
+// 6. CLINICAL WORKSTATION CONSOLE
+function loadPatientIntoConsultation(id) {
+    currentSelectedPatientId = id;
+    const patient = localPatientsStore.find(p => p.id === id);
+    if(!patient) return;
+
+    // Mutate visibility matrices
+    document.getElementById('active-consult-empty').style.display = 'none';
+    document.getElementById('active-consult-form').style.display = 'block';
+    
+    document.getElementById('active-pname').innerText = `${patient.ticket_number} - ${patient.first_name} ${patient.surname}`;
+    document.getElementById('active-pcomplaint').innerText = `Chief Complaint: ${patient.chief_complaint}`;
+    
+    // Auto-advance structural workflow to consulting status tracking if currently assigned to triage line
+    if(patient.status === 'triage') {
+        supabase.from('patients').update({ status: 'consulting' }).eq('id', id);
+    }
+}
+
+async function completeConsult() {
+    if (!currentSelectedPatientId) return;
+    
+    const { error } = await supabase
+        .from('patients')
+        .update({ status: 'seen' })
+        .eq('id', currentSelectedPatientId);
+
+    if(error) {
+        showToast("Failed to finalize tracking session parameters.");
+        return;
+    }
+
+    showToast("Consultation protocol recorded. Case successfully logged as resolved.");
+    document.getElementById('d-notes').value = '';
+    document.getElementById('d-rx').value = '';
+    document.getElementById('active-consult-empty').style.display = 'block';
+    document.getElementById('active-consult-form').style.display = 'none';
+    currentSelectedPatientId = null;
+}
+
+// 7. FACILITY CONFIG UTILITY SETTINGS
+function saveFacilityConfig() {
+    const name = document.getElementById('cfg-clinic-name').value.trim();
+    if(name) {
+        document.getElementById('clinic-label').innerText = name;
+        showToast("Facility configurations adapted across systemic platforms.");
+    }
+}
+
+// 8. CUSTOM OVERRIDE FOR NAVIGATION DISPATCH
+function nav(pageId) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    
+    // Find item based on text profile matches contextually 
+    const items = document.querySelectorAll('.nav-item');
+    items.forEach(item => {
+        if(item.innerText.toLowerCase().includes(pageId.toLowerCase())) {
+            item.classList.add('active');
+        }
+    });
+    
+    const activePage = document.getElementById('page-' + pageId);
+    if(activePage) activePage.classList.add('active');
+    
+    const titleHeader = document.getElementById('page-title');
+    if(titleHeader) titleHeader.innerText = pageId.charAt(0).toUpperCase() + pageId.slice(1);
+    
+    // Re-render parameters contextually to keep accurate state representations
+    processAndRenderUI();
+}
+</script>
